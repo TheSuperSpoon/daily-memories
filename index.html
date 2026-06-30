@@ -1,0 +1,467 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mel's Birthday World</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <canvas id="sky" aria-hidden="true"></canvas>
+
+    <main id="app">
+      <section id="gate" class="gate" aria-label="Private entrance">
+        <div class="gate-panel">
+          <p class="eyebrow">Private birthday site</p>
+          <h1>For Mel</h1>
+          <p class="gate-copy">A private birthday protocol made just for July 20.</p>
+          <form id="passwordForm" class="password-form">
+            <label for="passwordInput">Enter the password</label>
+            <div class="password-row">
+              <input id="passwordInput" type="password" autocomplete="off" placeholder="hint: mel + birthday" />
+              <button type="submit">Unlock</button>
+            </div>
+            <p id="passwordMessage" class="form-message" aria-live="polite"></p>
+          </form>
+        </div>
+      </section>
+
+      <section id="lovePrelude" class="love-prelude hidden" aria-labelledby="preludeTitle">
+        <div class="prelude-atmosphere" aria-hidden="true"></div>
+        <article class="prelude-letter">
+          <header class="prelude-header">
+            <p class="prelude-kicker">A letter before everything else</p>
+            <h1 id="preludeTitle">喧嚣之外，我们是彼此的灯塔</h1>
+            <div class="prelude-progress" aria-live="polite">
+              <span id="lightProgress">0 / 5</span>
+              <span>束光已亮起</span>
+            </div>
+          </header>
+
+          <div class="prelude-copy">
+            <p class="letter-paragraph">
+              在遇见你之前，我从未想过爱可以是一场如此深沉、寂静、动人的守望。
+            </p>
+            <p class="letter-paragraph">
+              相遇时，你把<button class="light-word" type="button" aria-label="点亮这束光">光</button>借给远航的帆，用最温柔的耐心去缝补别人的焦虑。
+            </p>
+            <p class="letter-paragraph">
+              当我真正走近你时，我才看见你在黑夜里烟囱中散落的烟炱。那些来自过去的风暴和不曾被温柔以待的记忆，化成了你脚下随时会裂开的冰面。我知道你常常在恐惧中战栗，习惯用我没事来筑起高墙，也在每一次靠近时反复退缩、反复道歉，生怕自己成为了谁的负担。
+            </p>
+            <p class="letter-paragraph">
+              不怕你厌烦，我依旧想告诉你，你从来都不是负担。那些过往的伤害不是你的错，你的敏感和脆弱、甚至你的无助和失控，都是你在这个世界上努力爱过、挣扎过的痕迹，我爱你。
+            </p>
+            <p class="letter-paragraph">
+              在这短短几个月我们关系的伊始，我真的学会了很多。我学着做你的安全基地，在风浪亮起时抱紧你，在夜色最深时一遍遍对你说我不走。扮演这个角色或许有时也会让我感到疲惫，或许你有时也会自责内耗这个，但这些情绪的外显并不意味着我想退缩，相反，我的爱不是一时冲动的芳香的欢愉，我更想在这一片微<button class="light-word" type="button" aria-label="点亮这束光">光</button>中，坦诚我的脆弱。
+            </p>
+            <p class="letter-paragraph">
+              我不需要你在一夜之间变得坚强，也不需要你长出无坚不摧的壳。即使有些伤痛无法痊愈也完全没有关系。我只希望，在未来的日子里，我们不再是一个人拼命的守灯人，也不是我单向地去拉住掉落的你。我希望在这个小小的空间里，你能慢慢找回属于你自己的、不为任何人（包括我）妥协的<button class="light-word" type="button" aria-label="点亮这束光">光</button>芒。
+            </p>
+            <p class="letter-paragraph">
+              灯塔不是一个向死而生的孤岛，而是在海域里唯一幸存的希望，要征服和拯救时间就必须进入时间。如果生活是一场注定要面对风浪的航行，那么在这里，我愿意守住点亮灯塔的<button class="light-word" type="button" aria-label="点亮这束光">光</button>。
+            </p>
+            <p class="letter-paragraph">
+              在这里，你可以放下所有重担和舟途的劳顿，允许自己被爱、被看见，在风暴停息的间隙互相依傍。我们不需要赶路，只要一寸一寸地，把彼此的黑夜坐亮。
+            </p>
+            <p class="letter-paragraph">
+              当所有的<button class="light-word" type="button" aria-label="点亮最后一束光">光</button>在这一刻交汇，请别害怕，闭上眼，这里只有我们。
+            </p>
+            <p class="letter-paragraph">
+              无论未来如何，我都愿意陪你走下去。不是因为责任，而是因为在命运所有的选项里，我始终选择你。
+            </p>
+          </div>
+        </article>
+
+        <div id="homecoming" class="homecoming hidden" aria-live="polite">
+          <p>欢迎回家，这里只有我们。</p>
+          <span id="homecomingCount">3</span>
+        </div>
+
+        <button id="ticketStub" class="ticket-stub" type="button" aria-haspopup="dialog" aria-controls="ticketOverlay">
+          <span>EDGERUNNER PASS</span>
+          <strong>MOON-03.29</strong>
+        </button>
+
+        <div id="ticketOverlay" class="ticket-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ticketTitle">
+          <button class="ticket-backdrop" type="button" aria-label="Close ticket"></button>
+          <article class="edgerunner-ticket">
+            <button id="ticketClose" class="ticket-close" type="button" aria-label="Close ticket">×</button>
+            <div class="ticket-scanline" aria-hidden="true"></div>
+            <div class="ticket-top">
+              <div>
+                <p class="ticket-label">SERIAL</p>
+                <p class="ticket-serial">RE-MEL-RAY-FOREVER</p>
+              </div>
+              <div class="ticket-qr" aria-hidden="true"></div>
+            </div>
+            <div class="ticket-barcode" aria-hidden="true"></div>
+            <div class="ticket-title-block">
+              <p class="ticket-label">LUNAR TRANSIT AUTHORIZATION</p>
+              <h2 id="ticketTitle">Cyberpunk: Edgerunner</h2>
+              <p>登月车票 / MOONBOUND PASS</p>
+            </div>
+            <div class="ticket-grid">
+              <div>
+                <span>[PASSENGER]</span>
+                <strong>Mel / Ray</strong>
+              </div>
+              <div>
+                <span>[DATE/TIME]</span>
+                <strong>3/29</strong>
+              </div>
+              <div>
+                <span>[SEAT]</span>
+                <strong>ROW: INFINITY / SEAT: ALWAYS</strong>
+              </div>
+              <div>
+                <span>[STATUS]</span>
+                <strong>CONNECTED / BASE SECURE</strong>
+              </div>
+            </div>
+            <footer class="ticket-footer">
+              <span>I really wanna stay at your house</span>
+              <span>NO RETURN REQUIRED</span>
+            </footer>
+          </article>
+        </div>
+      </section>
+
+      <section id="site" class="site hidden">
+        <nav class="topbar" aria-label="Birthday world navigation">
+          <button class="nav-item is-active" type="button" data-page="home"><span>01</span> Home</button>
+          <button class="nav-item" type="button" data-page="glimmer"><span>02</span> 微光收集</button>
+          <button class="nav-item" type="button" data-page="planet"><span>03</span> Planet</button>
+          <button class="nav-item" type="button" data-page="memories"><span>04</span> Memories</button>
+          <button class="nav-item" type="button" data-page="game"><span>05</span> Game</button>
+          <button class="nav-item" type="button" data-page="secret"><span>06</span> Surprise</button>
+        </nav>
+
+        <section id="home" class="page is-active home-page">
+          <section class="crypto-hero">
+            <div class="hero-copy">
+              <p class="eyebrow">Mel Birthday Protocol</p>
+              <h2>One private universe. Built for July 20.</h2>
+              <p>
+                A cinematic birthday website with your memories, her worlds, and a final unlock.
+              </p>
+            <div class="hero-actions">
+                <button class="primary-link" type="button" data-page-jump="glimmer">Open 微光收集</button>
+                <button id="lockButton" type="button">Lock</button>
+              </div>
+            </div>
+            <div class="hero-visual" aria-label="Panoramic preview">
+              <img src="./assets/jinx.png" alt="Jinx inspired visual" />
+              <div class="hero-visual-card">
+                <span>Birthday vault</span>
+                <strong>03.29 → 07.20</strong>
+              </div>
+            </div>
+          </section>
+
+          <section class="panorama-sequence" aria-label="Panoramic scrolling image sequence">
+            <figure class="panorama-frame" data-panel="0">
+              <img src="./assets/jinx.png" alt="Jinx from Arcane inspired birthday reference" />
+            </figure>
+            <figure class="panorama-frame" data-panel="1">
+              <img src="./assets/yoru.jpg" alt="Yoru Valorant wallpaper" />
+            </figure>
+            <figure class="panorama-frame" data-panel="2">
+              <img src="./assets/fleabag.jpg" alt="Fleabag wallpaper" />
+            </figure>
+            <figure class="panorama-frame" data-panel="3">
+              <img src="./assets/dead-poets.jpg" alt="Dead Poets Society wallpaper" />
+            </figure>
+            <figure class="panorama-frame" data-panel="4">
+              <img src="./assets/the-strokes.jpg" alt="The Strokes wallpaper" />
+            </figure>
+            <figure class="panorama-frame" data-panel="5">
+              <img src="./assets/gojira.jpg" alt="Gojira wallpaper" />
+            </figure>
+            <figure class="panorama-frame" data-panel="6">
+              <img src="./assets/cyberpunk.jpeg" alt="Cyberpunk visual" />
+            </figure>
+            <figure class="panorama-frame" data-panel="7">
+              <img src="./assets/omori.jpg" alt="Omori computer wallpaper" />
+            </figure>
+            <figure class="panorama-frame" data-panel="8">
+              <img src="./assets/nana.jpg" alt="Nana anime wallpaper" />
+            </figure>
+          </section>
+
+          <section class="home-terminal reveal-card">
+            <div>
+              <p class="eyebrow">Love metrics</p>
+              <h3><span data-count-target="520">0</span>+ “I love you” messages</h3>
+              <p>Placeholder count. After you count the real number, change the target in the HTML.</p>
+            </div>
+            <div>
+              <p class="eyebrow">Checkpoint</p>
+              <h3>3/29</h3>
+              <p>The day you started the romantic relationship.</p>
+            </div>
+            <div>
+              <p class="eyebrow">September</p>
+              <h3>CN → US</h3>
+              <p>Two years apart before you can follow.</p>
+            </div>
+            <button class="primary-link" type="button" data-page-jump="memories">Enter the archive</button>
+          </section>
+        </section>
+
+        <section id="glimmer" class="page glimmer-page">
+          <canvas id="glimmerStars" aria-hidden="true"></canvas>
+          <div class="glimmer-shell">
+            <header class="glimmer-hero">
+              <div>
+                <p class="eyebrow">From 2026.07.20</p>
+                <h2>微光收集</h2>
+                <p>每天各上传一张照片。一个人的光点亮半座灯塔，两个人的光让灯塔扫过整片海。</p>
+              </div>
+              <div class="glimmer-widgets">
+                <button id="glimmerTicketStub" class="glimmer-ticket-stub" type="button">EDGERUNNER PASS</button>
+                <div class="streak-widget">
+                  <span>STREAK</span>
+                  <strong id="streakCount">0</strong>
+                  <small>full synergy days</small>
+                </div>
+                <button id="backpackButton" class="backpack-button" type="button">背包 <span id="retroCardCount">0</span></button>
+              </div>
+            </header>
+
+            <section class="lighthouse-panel">
+              <div class="lighthouse-scene" id="lighthouseScene">
+                <div class="moon"></div>
+                <div class="lighthouse-beam"></div>
+                <svg class="lighthouse-svg" viewBox="0 0 220 300" role="img" aria-label="Lighthouse progress">
+                  <path class="sea-wave" d="M0 260 C42 238 78 282 120 260 C157 241 184 252 220 238 L220 300 L0 300 Z"></path>
+                  <path class="tower-shadow" d="M84 280 L101 96 L119 96 L138 280 Z"></path>
+                  <path class="tower-lit left" d="M84 280 L101 96 L110 96 L110 280 Z"></path>
+                  <path class="tower-lit right" d="M110 280 L119 96 L138 280 L110 280 Z"></path>
+                  <rect class="lantern" x="86" y="58" width="48" height="38" rx="6"></rect>
+                  <path class="roof" d="M82 58 L110 30 L138 58 Z"></path>
+                  <circle class="lamp-core" cx="110" cy="77" r="10"></circle>
+                  <rect class="door" x="102" y="234" width="18" height="46" rx="4"></rect>
+                </svg>
+              </div>
+              <div class="growth-panel">
+                <p class="eyebrow">Growth Mode</p>
+                <h3 id="growthTitle">Seed</h3>
+                <p id="growthCopy">第一天的微光会在灯塔脚下埋下一颗种子。</p>
+                <div id="growthPlant" class="growth-plant seed"></div>
+              </div>
+            </section>
+
+            <section class="calendar-panel">
+              <div class="calendar-toolbar">
+                <button id="prevMonth" type="button">‹</button>
+                <h3 id="calendarTitle">July 2026</h3>
+                <button id="nextMonth" type="button">›</button>
+              </div>
+              <div class="calendar-weekdays" aria-hidden="true">
+                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+              </div>
+              <div id="calendarGrid" class="calendar-grid" aria-label="微光日历"></div>
+            </section>
+
+            <section class="gallery-panel">
+              <div class="section-heading">
+                <p class="eyebrow">Gallery Timeline</p>
+                <h2>收集到的微光</h2>
+                <p>这里会显示每日上传的照片。本地原型会保存在当前浏览器里。</p>
+              </div>
+              <div id="glimmerGallery" class="glimmer-gallery"></div>
+            </section>
+          </div>
+
+          <div id="uploadModal" class="glimmer-modal hidden" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
+            <button class="modal-backdrop" type="button" data-close-modal></button>
+            <form id="uploadForm" class="upload-card">
+              <button class="modal-close" type="button" data-close-modal>×</button>
+              <p class="eyebrow">Daily Ritual</p>
+              <h3 id="uploadTitle">今日微光</h3>
+              <p id="uploadDateLabel"></p>
+              <label>
+                上传者
+                <select id="uploaderSelect">
+                  <option value="ray">Ray</option>
+                  <option value="mel">Mel</option>
+                </select>
+              </label>
+              <label>
+                一张照片
+                <input id="photoInput" type="file" accept="image/*" />
+              </label>
+              <label>
+                一句话
+                <textarea id="photoNote" rows="3" placeholder="今天想留住的微光..."></textarea>
+              </label>
+              <button type="submit">Save Light</button>
+            </form>
+          </div>
+
+          <div id="backpackModal" class="glimmer-modal hidden" role="dialog" aria-modal="true" aria-labelledby="backpackTitle">
+            <button class="modal-backdrop" type="button" data-close-modal></button>
+            <div class="upload-card backpack-card">
+              <button class="modal-close" type="button" data-close-modal>×</button>
+              <p class="eyebrow">Shared Backpack</p>
+              <h3 id="backpackTitle">背包</h3>
+              <p>每连续 10 天双方都上传，会获得一张补签卡。选择补签卡后，可以点过去缺失的一天补回微光。</p>
+              <button id="useRetroCard" type="button">Use Retroactive Card</button>
+              <p id="retroModeHint" class="retro-hint"></p>
+            </div>
+          </div>
+        </section>
+
+        <section id="planet" class="page planet-page">
+          <canvas id="planetParticles" aria-hidden="true"></canvas>
+          <div class="planet-layout">
+            <aside class="orbit-panel" aria-label="Mel planet orbit map">
+              <div class="orbit-map">
+                <span class="planet-core">Mel</span>
+                <span class="orbit-dot dot-one">3/29</span>
+                <span class="orbit-dot dot-two">US</span>
+                <span class="orbit-dot dot-three">BD</span>
+                <span class="orbit-dot dot-four">2Y</span>
+              </div>
+              <div class="mission-card">
+                <p class="eyebrow">Current orbit</p>
+                <h3>China to the US, held together by rhythm.</h3>
+                <p>Temporary long distance. Not a pause, just a hard section in the song.</p>
+              </div>
+            </aside>
+
+            <div class="planet-main">
+              <section class="home-board reveal-card">
+                <div class="tape-strip" aria-hidden="true"></div>
+                <p class="pill-label">Bad Decisions · private system map</p>
+                <h2>Our Orbit</h2>
+                <p class="home-subtitle">
+                  She sings. I drum. Somehow the loudest parts of life still made room for something gentle.
+                </p>
+                <div class="status-row" aria-label="Relationship status checkpoints">
+                  <span>♡ 3/29 · started dating</span>
+                  <span>☑ September · she leaves for the US</span>
+                  <span>⧖ Two years · until I follow</span>
+                </div>
+                <div class="hero-actions">
+                  <button class="primary-link" type="button" data-page-jump="memories">Start discovering</button>
+                </div>
+              </section>
+
+              <section class="stat-board reveal-card" aria-label="Love stats">
+                <div>
+                  <p class="eyebrow">Start</p>
+                  <h3>3/29</h3>
+                  <p>Romantic relationship officially started.</p>
+                </div>
+                <div>
+                  <p class="eyebrow">Band</p>
+                  <h3>Bad Decisions</h3>
+                  <p>Singer and drummer. Voice and pulse. Frontline and backbeat.</p>
+                </div>
+                <div>
+                  <p class="eyebrow">Distance</p>
+                  <h3>CN → US</h3>
+                  <p>September starts the hard part. This page is one way to keep the thread visible.</p>
+                </div>
+              </section>
+
+              <section class="scroll-story" aria-label="Relationship notes">
+                <article class="interest-card reveal-card">
+                  <span class="card-number">01</span>
+                  <p class="eyebrow">Her</p>
+                  <h3>Tolerant, loving, still here.</h3>
+                  <p>A placeholder for the way she keeps choosing warmth, even when life has asked too much from her.</p>
+                </article>
+                <article class="interest-card reveal-card">
+                  <span class="card-number">02</span>
+                  <p class="eyebrow">Us</p>
+                  <h3>Not fragile, just important.</h3>
+                  <p>A place to write what helps during bad days: patience, softness, honesty, and not making love feel like pressure.</p>
+                </article>
+                <article class="interest-card reveal-card">
+                  <span class="card-number">03</span>
+                  <p class="eyebrow">Band</p>
+                  <h3>Voice and drums.</h3>
+                  <p>She carries the melody. I keep the time. Bad Decisions becomes part of the love story without needing to explain itself.</p>
+                </article>
+                <article class="interest-card reveal-card">
+                  <span class="card-number">04</span>
+                  <p class="eyebrow">September</p>
+                  <h3>The airport chapter.</h3>
+                  <p>She graduates and leaves for the US. China stays here with me for a while. The plan is still us.</p>
+                </article>
+                <article class="interest-card reveal-card">
+                  <span class="card-number">05</span>
+                  <p class="eyebrow">Promise</p>
+                  <h3>Two years is long. It is not forever.</h3>
+                  <p>Placeholder text for a promise you can make properly later, when you know exactly how you want to say it.</p>
+                </article>
+              </section>
+
+              <div class="portal-grid" aria-label="Website sections">
+                <button class="portal-card" type="button" data-page-jump="memories">
+                  <span>01</span>
+                  <h3>Memory Timeline</h3>
+                  <p>Photos, voice notes, chats, and tiny moments that light up.</p>
+                </button>
+                <button class="portal-card" type="button" data-page-jump="game">
+                  <span>02</span>
+                  <h3>Mini Game</h3>
+                  <p>Catch hearts with a drum pad and unlock the surprise.</p>
+                </button>
+                <button class="portal-card" type="button" data-page-jump="secret">
+                  <span>03</span>
+                  <h3>Final Surprise</h3>
+                  <p>A place for the song, date plan, QR code, gift, or video.</p>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="memories" class="page memory-section">
+          <div class="section-heading">
+            <p class="eyebrow">Page one</p>
+            <h2>Memory Timeline</h2>
+            <p>Replace these placeholders with photos, screenshots, voice notes, and little inside-joke captions.</p>
+          </div>
+          <div id="timeline" class="timeline" aria-label="Relationship memory timeline"></div>
+        </section>
+
+        <section id="game" class="page game-section">
+          <div class="section-heading">
+            <p class="eyebrow">Page three</p>
+            <h2>Catch the Hearts</h2>
+            <p>Move the purple drum pad and catch 20 hearts to unlock the final surprise page.</p>
+          </div>
+          <div class="game-shell">
+            <div class="game-hud">
+              <span>Score: <strong id="score">0</strong>/20</span>
+              <button id="startGame" type="button">Start</button>
+            </div>
+            <canvas id="heartGame" width="900" height="520" aria-label="Catch falling hearts game"></canvas>
+            <p id="gameMessage" class="game-message">Use your mouse or finger to move.</p>
+          </div>
+        </section>
+
+        <section id="secret" class="page secret-section locked">
+          <div class="secret-content">
+            <p class="eyebrow">Final page</p>
+            <h2>Mel, this part is for the ending.</h2>
+            <p>
+              Add the real birthday surprise here: the date plan, a video, a QR code, or the gift reveal.
+            </p>
+            <div class="music-box">
+              <p>Birthday soundtrack slot</p>
+              <audio controls src="./assets/your-song.mp3"></audio>
+              <small>Put your song file at <code>outputs/assets/your-song.mp3</code> when you choose it.</small>
+            </div>
+          </div>
+        </section>
+      </section>
+    </main>
+
+    <script src="./script.js"></script>
+  </body>
+</html>
