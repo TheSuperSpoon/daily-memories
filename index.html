@@ -70,17 +70,17 @@
               无论未来如何，我都愿意陪你走下去。不是因为责任，而是因为在命运所有的选项里，我始终选择你。
             </p>
           </div>
+
+          <button id="ticketStub" class="ticket-stub" type="button" aria-haspopup="dialog" aria-controls="ticketOverlay">
+            <span>EDGERUNNER PASS</span>
+            <strong>MOON-03.29</strong>
+          </button>
         </article>
 
         <div id="homecoming" class="homecoming hidden" aria-live="polite">
           <p>欢迎回家，这里只有我们。</p>
           <span id="homecomingCount">3</span>
         </div>
-
-        <button id="ticketStub" class="ticket-stub" type="button" aria-haspopup="dialog" aria-controls="ticketOverlay">
-          <span>EDGERUNNER PASS</span>
-          <strong>MOON-03.29</strong>
-        </button>
 
         <div id="ticketOverlay" class="ticket-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="ticketTitle">
           <button class="ticket-backdrop" type="button" aria-label="Close ticket"></button>
@@ -130,30 +130,41 @@
         <nav class="topbar" aria-label="Birthday world navigation">
           <button class="nav-item is-active" type="button" data-page="home"><span>01</span> Home</button>
           <button class="nav-item" type="button" data-page="glimmer"><span>02</span> 微光收集</button>
-          <button class="nav-item" type="button" data-page="planet"><span>03</span> Planet</button>
-          <button class="nav-item" type="button" data-page="memories"><span>04</span> Memories</button>
-          <button class="nav-item" type="button" data-page="game"><span>05</span> Game</button>
-          <button class="nav-item" type="button" data-page="secret"><span>06</span> Surprise</button>
+          <button class="nav-item" type="button" data-page="memories"><span>03</span> Memories</button>
+          <button class="nav-item" type="button" data-page="game"><span>04</span> Game</button>
+          <button class="nav-item" type="button" data-page="secret"><span>05</span> Surprise</button>
         </nav>
 
         <section id="home" class="page is-active home-page">
           <section class="crypto-hero">
             <div class="hero-copy">
-              <p class="eyebrow">Mel Birthday Protocol</p>
-              <h2>One private universe. Built for July 20.</h2>
+              <p class="pill-label">Our Planet · Daily Love Quest</p>
+              <h2>我们的星球</h2>
+              <h3>从 720 到两年后，每天点亮一个灯塔</h3>
               <p>
-                A cinematic birthday website with your memories, her worlds, and a final unlock.
+                这不是一个告白页生日礼物，每天登录会解锁不同内容。
               </p>
-            <div class="hero-actions">
+              <div class="planet-quick-stats" aria-label="Our planet checkpoints">
+                <span>3/29 已相爱</span>
+                <span>7/20 启航</span>
+                <span>两年后重逢</span>
+              </div>
+              <div class="hero-actions">
                 <button class="primary-link" type="button" data-page-jump="glimmer">Open 微光收集</button>
                 <button id="lockButton" type="button">Lock</button>
               </div>
             </div>
-            <div class="hero-visual" aria-label="Panoramic preview">
-              <img src="./assets/jinx.png" alt="Jinx inspired visual" />
+            <div class="hero-visual planet-preview" aria-label="Our planet preview">
+              <div class="orbit-rings" aria-hidden="true"></div>
+              <div class="planet-sphere">
+                <span>720</span>
+              </div>
+              <div class="orbit-chip chip-one">第一座灯塔</div>
+              <div class="orbit-chip chip-two">今日解锁</div>
+              <div class="orbit-chip chip-three">Bad Decisions</div>
               <div class="hero-visual-card">
-                <span>Birthday vault</span>
-                <strong>03.29 → 07.20</strong>
+                <span>Daily system</span>
+                <strong>Mel / Ray</strong>
               </div>
             </div>
           </section>
@@ -215,7 +226,7 @@
               <div>
                 <p class="eyebrow">From 2026.07.20</p>
                 <h2>微光收集</h2>
-                <p>每天各上传一张照片。一个人的光点亮半座灯塔，两个人的光让灯塔扫过整片海。</p>
+                <p>每天各上传一张截图或照片。左边按时间解锁，右边把今天的小事放进两个人的相框里。</p>
               </div>
               <div class="glimmer-widgets">
                 <button id="glimmerTicketStub" class="glimmer-ticket-stub" type="button">EDGERUNNER PASS</button>
@@ -228,39 +239,65 @@
               </div>
             </header>
 
-            <section class="lighthouse-panel">
-              <div class="lighthouse-scene" id="lighthouseScene">
-                <div class="moon"></div>
-                <div class="lighthouse-beam"></div>
-                <svg class="lighthouse-svg" viewBox="0 0 220 300" role="img" aria-label="Lighthouse progress">
-                  <path class="sea-wave" d="M0 260 C42 238 78 282 120 260 C157 241 184 252 220 238 L220 300 L0 300 Z"></path>
-                  <path class="tower-shadow" d="M84 280 L101 96 L119 96 L138 280 Z"></path>
-                  <path class="tower-lit left" d="M84 280 L101 96 L110 96 L110 280 Z"></path>
-                  <path class="tower-lit right" d="M110 280 L119 96 L138 280 L110 280 Z"></path>
-                  <rect class="lantern" x="86" y="58" width="48" height="38" rx="6"></rect>
-                  <path class="roof" d="M82 58 L110 30 L138 58 Z"></path>
-                  <circle class="lamp-core" cx="110" cy="77" r="10"></circle>
-                  <rect class="door" x="102" y="234" width="18" height="46" rx="4"></rect>
-                </svg>
-              </div>
-              <div class="growth-panel">
-                <p class="eyebrow">Growth Mode</p>
-                <h3 id="growthTitle">Seed</h3>
-                <p id="growthCopy">第一天的微光会在灯塔脚下埋下一颗种子。</p>
-                <div id="growthPlant" class="growth-plant seed"></div>
-              </div>
-            </section>
+            <section class="glimmer-main">
+              <aside class="calendar-panel">
+                <span class="purple-tape tape-one" aria-hidden="true"></span>
+                <div class="calendar-card-top">
+                  <div>
+                    <p class="eyebrow">Daily progress</p>
+                    <h3>微光进度</h3>
+                  </div>
+                  <strong id="glimmerProgressCount">0/24</strong>
+                </div>
+                <div class="calendar-toolbar">
+                  <button id="prevMonth" type="button" aria-label="Previous month">‹</button>
+                  <h4 id="calendarTitle">July 2026</h4>
+                  <button id="nextMonth" type="button" aria-label="Next month">›</button>
+                </div>
+                <div id="calendarGrid" class="calendar-grid" aria-label="微光日历"></div>
+                <p id="calendarHint" class="calendar-hint">7/20 起，每天会解锁一个格子。</p>
+              </aside>
 
-            <section class="calendar-panel">
-              <div class="calendar-toolbar">
-                <button id="prevMonth" type="button">‹</button>
-                <h3 id="calendarTitle">July 2026</h3>
-                <button id="nextMonth" type="button">›</button>
-              </div>
-              <div class="calendar-weekdays" aria-hidden="true">
-                <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
-              </div>
-              <div id="calendarGrid" class="calendar-grid" aria-label="微光日历"></div>
+              <section class="daily-board">
+                <span class="purple-tape tape-two" aria-hidden="true"></span>
+                <p id="dailyDatePill" class="day-pill">Day 01 · 2026-07-20</p>
+                <h3 id="dailyTitle">今日微光上传栏</h3>
+                <p id="dailyStatusCopy" class="daily-copy">等到当天解锁后，你们可以各放一张截图、照片或聊天里的小瞬间。</p>
+                <div class="upload-lanes">
+                  <article class="upload-lane ray-lane">
+                    <div class="lane-title">
+                      <span>R</span>
+                      <strong>Ray 这一栏</strong>
+                    </div>
+                    <div id="rayUploadPreview" class="upload-preview">
+                      <span>截图 / 照片</span>
+                    </div>
+                    <button type="button" data-upload-person="ray">上传 Ray 的微光</button>
+                  </article>
+                  <article class="upload-lane mel-lane">
+                    <div class="lane-title">
+                      <span>M</span>
+                      <strong>Mel 这一栏</strong>
+                    </div>
+                    <div id="melUploadPreview" class="upload-preview">
+                      <span>截图 / 照片</span>
+                    </div>
+                    <button type="button" data-upload-person="mel">上传 Mel 的微光</button>
+                  </article>
+                </div>
+                <div class="mini-lighthouse-card" id="lighthouseScene">
+                  <div class="lighthouse-beam"></div>
+                  <div class="stamp-lighthouse" aria-hidden="true">
+                    <span></span>
+                  </div>
+                  <div>
+                    <p class="eyebrow">Lighthouse state</p>
+                    <strong id="growthTitle">Seed</strong>
+                    <p id="growthCopy">第一天的微光会在灯塔脚下埋下一颗种子。</p>
+                  </div>
+                  <div id="growthPlant" class="growth-plant seed"></div>
+                </div>
+              </section>
             </section>
 
             <section class="gallery-panel">

@@ -98,6 +98,8 @@ function unlock() {
 function showPrelude() {
   site.classList.add("hidden");
   lovePrelude.classList.remove("hidden");
+  ticketOverlay?.classList.add("hidden");
+  ticketOverlay?.classList.remove("is-closing");
   window.scrollTo({ top: 0 });
 }
 
@@ -445,8 +447,17 @@ const growthTitle = $("#growthTitle");
 const growthCopy = $("#growthCopy");
 const growthPlant = $("#growthPlant");
 const glimmerTicketStub = $("#glimmerTicketStub");
+const glimmerProgressCount = $("#glimmerProgressCount");
+const calendarHint = $("#calendarHint");
+const dailyDatePill = $("#dailyDatePill");
+const dailyTitle = $("#dailyTitle");
+const dailyStatusCopy = $("#dailyStatusCopy");
+const rayUploadPreview = $("#rayUploadPreview");
+const melUploadPreview = $("#melUploadPreview");
+const uploadLaneButtons = [...document.querySelectorAll("[data-upload-person]")];
 let glimmerMonth = new Date("2026-07-01T00:00:00");
-let selectedGlimmerDate = "";
+let activeGlimmerDate = todayKey() >= CONFIG.glimmerStart ? todayKey() : CONFIG.glimmerStart;
+let selectedGlimmerDate = activeGlimmerDate;
 let retroMode = false;
 
 function getGlimmerData() {
@@ -510,39 +521,99 @@ function statusForDay(day) {
   return "";
 }
 
+function dayNumberFromStart(key) {
+  const start = new Date(`${CONFIG.glimmerStart}T00:00:00`);
+  const target = new Date(`${key}T00:00:00`);
+  return Math.max(1, Math.floor((target - start) / 86400000) + 1);
+}
+
+function isUploadableDate(key, dayData) {
+  const nowKey = todayKey();
+  const unlocked = key === nowKey && key >= CONFIG.glimmerStart;
+  const retroAllowed = retroMode && key < nowKey && key >= CONFIG.glimmerStart && !isCompleteDay(dayData);
+  return unlocked || retroAllowed;
+}
+
+function renderUploadPreview(element, entry, emptyText) {
+  if (!element) return;
+  element.classList.toggle("has-photo", Boolean(entry?.photo));
+  element.innerHTML = entry?.photo
+    ? `<img src="${entry.photo}" alt="${emptyText}" /><small>${entry.note || "今天的微光"}</small>`
+    : `<span>${emptyText}</span>`;
+}
+
+function renderDailyBoard() {
+  const data = getGlimmerData();
+  const dayData = data.days[activeGlimmerDate] || {};
+  const dayNumber = dayNumberFromStart(activeGlimmerDate);
+  const uploadable = isUploadableDate(activeGlimmerDate, dayData);
+  const beforeStart = activeGlimmerDate < CONFIG.glimmerStart;
+  const future = activeGlimmerDate > todayKey();
+
+  if (dailyDatePill) dailyDatePill.textContent = `Day ${String(dayNumber).padStart(2, "0")} · ${activeGlimmerDate}`;
+  if (dailyTitle) dailyTitle.textContent = isCompleteDay(dayData) ? "今天的微光已经合上了" : "今日微光上传栏";
+  if (dailyStatusCopy) {
+    if (beforeStart || future) {
+      dailyStatusCopy.textContent = "这一天还没解锁。等时间到了，这里会变成你们当天的小相框。";
+    } else if (retroMode) {
+      dailyStatusCopy.textContent = "补签模式开启中。选好缺失的一天后，可以把那天没来得及留下的微光补回来。";
+    } else {
+      dailyStatusCopy.textContent = "每人一张截图或照片。两栏都放好以后，这一天会变成完整的紫色微光。";
+    }
+  }
+
+  renderUploadPreview(rayUploadPreview, dayData.ray, "Ray 的截图 / 照片");
+  renderUploadPreview(melUploadPreview, dayData.mel, "Mel 的截图 / 照片");
+  uploadLaneButtons.forEach((button) => {
+    button.disabled = !uploadable;
+    button.textContent = uploadable
+      ? `上传 ${button.dataset.uploadPerson === "ray" ? "Ray" : "Mel"} 的微光`
+      : "等待解锁";
+  });
+}
+
 function renderCalendar() {
   if (!calendarGrid || !calendarTitle) return;
   const data = getGlimmerData();
   const year = glimmerMonth.getFullYear();
   const month = glimmerMonth.getMonth();
-  const first = new Date(year, month, 1);
-  const startOffset = first.getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const nowKey = todayKey();
   const startKey = CONFIG.glimmerStart;
 
-  calendarTitle.textContent = glimmerMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
-  calendarGrid.innerHTML = "";
+  const completedInMonth = Object.entries(data.days)
+    .filter(([key, day]) => key.startsWith(`${year}-${String(month + 1).padStart(2, "0")}`) && isCompleteDay(day))
+    .length;
+  const totalFromStart = Array.from({ length: daysInMonth }, (_, index) => dateKey(new Date(year, month, index + 1)))
+    .filter((key) => key >= startKey)
+    .length;
 
-  for (let i = 0; i < startOffset; i += 1) {
-    const empty = document.createElement("div");
-    empty.className = "calendar-cell empty";
-    calendarGrid.appendChild(empty);
+  calendarTitle.textContent = glimmerMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" });
+  if (glimmerProgressCount) glimmerProgressCount.textContent = `${completedInMonth}/${totalFromStart}`;
+  if (calendarHint) {
+    calendarHint.textContent = retroMode
+      ? "补签模式：选择一个过去缺失的日期。"
+      : "7/20 起，每天会按时间解锁一个格子。";
   }
+  calendarGrid.innerHTML = "";
 
   for (let day = 1; day <= daysInMonth; day += 1) {
     const current = new Date(year, month, day);
     const key = dateKey(current);
     const dayData = data.days[key];
     const status = statusForDay(dayData);
-    const unlocked = key === nowKey && key >= startKey;
-    const retroAllowed = retroMode && key < nowKey && key >= startKey && !isCompleteDay(dayData);
+    const uploadable = isUploadableDate(key, dayData);
+    const seen = key <= nowKey && key >= startKey;
     const cell = document.createElement("button");
     cell.type = "button";
-    cell.className = `calendar-cell ${status} ${key === nowKey ? "today" : ""} ${!unlocked && !retroAllowed ? "locked" : ""}`;
-    cell.innerHTML = `<span class="day-number">${day}</span>${status === "complete" ? '<span class="mini-lighthouse">♜</span>' : ""}`;
-    cell.disabled = !unlocked && !retroAllowed;
-    cell.addEventListener("click", () => openUploadModal(key));
+    cell.className = `calendar-cell ${status} ${key === activeGlimmerDate ? "selected" : ""} ${key === nowKey ? "today" : ""} ${!uploadable ? "locked" : ""}`;
+    cell.innerHTML = `<span class="day-number">${day}</span><span class="cell-icon">${status === "complete" ? "◆" : seen ? "·" : "⌁"}</span>`;
+    cell.disabled = key < startKey;
+    cell.addEventListener("click", () => {
+      activeGlimmerDate = key;
+      selectedGlimmerDate = key;
+      renderGlimmer();
+    });
     calendarGrid.appendChild(cell);
   }
 }
@@ -550,7 +621,7 @@ function renderCalendar() {
 function renderLighthouse() {
   if (!lighthouseScene) return;
   const data = getGlimmerData();
-  const current = data.days[todayKey()] || {};
+  const current = data.days[activeGlimmerDate] || {};
   lighthouseScene.classList.toggle("ray", Boolean(current.ray?.photo));
   lighthouseScene.classList.toggle("mel", Boolean(current.mel?.photo));
   lighthouseScene.classList.toggle("complete", isCompleteDay(current));
@@ -637,16 +708,18 @@ function renderGlimmer() {
   streakCount.textContent = stats.streak;
   retroCardCount.textContent = data.retroCards;
   renderCalendar();
+  renderDailyBoard();
   renderLighthouse();
   renderGrowth(stats);
   renderGallery();
   renderGlimmerStars(stats);
 }
 
-function openUploadModal(key) {
+function openUploadModal(key, person) {
   selectedGlimmerDate = key;
   uploadDateLabel.textContent = key;
   uploadForm.reset();
+  if (person && uploaderSelect) uploaderSelect.value = person;
   uploadModal.classList.remove("hidden");
 }
 
@@ -681,6 +754,7 @@ function saveUpload(event) {
       lighthouseScene.classList.add("synergy");
       window.setTimeout(() => lighthouseScene.classList.remove("synergy"), 1700);
     }
+    activeGlimmerDate = selectedGlimmerDate;
     renderGlimmer();
   };
   reader.readAsDataURL(file);
@@ -698,6 +772,9 @@ nextMonthButton?.addEventListener("click", () => {
 
 uploadForm?.addEventListener("submit", saveUpload);
 document.querySelectorAll("[data-close-modal]").forEach((button) => button.addEventListener("click", closeGlimmerModals));
+uploadLaneButtons.forEach((button) => {
+  button.addEventListener("click", () => openUploadModal(activeGlimmerDate, button.dataset.uploadPerson));
+});
 backpackButton?.addEventListener("click", () => backpackModal.classList.remove("hidden"));
 glimmerTicketStub?.addEventListener("click", openTicket);
 useRetroCardButton?.addEventListener("click", () => {
