@@ -65,12 +65,40 @@ const ticketStub = $("#ticketStub");
 const ticketOverlay = $("#ticketOverlay");
 const ticketClose = $("#ticketClose");
 const ticketBackdrop = document.querySelector(".ticket-backdrop");
+const preludeLetterWrap = document.querySelector(".prelude-letter-wrap");
+const returnLetterButton = $("#returnLetterButton");
+const returnHomeFromLetter = $("#returnHomeFromLetter");
 const navItems = [...document.querySelectorAll(".nav-item")];
 const pageJumpButtons = [...document.querySelectorAll("[data-page-jump]")];
 const pages = [...document.querySelectorAll(".page")];
 let litLightCount = 0;
 let preludeCompleteTimer;
 let homecomingInterval;
+
+function hasCompletedPrelude() {
+  return localStorage.getItem("melPreludeComplete") === "yes";
+}
+
+function syncCompletedControls() {
+  document.body.classList.toggle("prelude-complete", hasCompletedPrelude());
+}
+
+function setTicketPeek(open) {
+  lovePrelude.classList.toggle("ticket-peeked", open);
+  ticketStub?.setAttribute("aria-expanded", open ? "true" : "false");
+}
+
+function markPreludeLit() {
+  litLightCount = lightWords.length;
+  lightProgress.textContent = `${lightWords.length} / ${lightWords.length}`;
+  lovePrelude.classList.add("is-complete", "is-revisit");
+  lightWords.forEach((word) => {
+    word.dataset.lit = "yes";
+    word.setAttribute("aria-pressed", "true");
+    word.classList.add("is-lit");
+    word.closest(".letter-paragraph")?.classList.add("is-illuminated");
+  });
+}
 
 function showPage(pageId) {
   pages.forEach((page) => page.classList.toggle("is-active", page.id === pageId));
@@ -82,6 +110,9 @@ function showPage(pageId) {
   if (pageId === "glimmer") {
     resizeGlimmerCanvas();
     renderGlimmer();
+  }
+  if (pageId === "memories") {
+    window.setTimeout(queuePanoramaUpdate, 0);
   }
 }
 
@@ -98,15 +129,23 @@ function unlock() {
 function showPrelude() {
   site.classList.add("hidden");
   lovePrelude.classList.remove("hidden");
+  setTicketPeek(false);
   ticketOverlay?.classList.add("hidden");
   ticketOverlay?.classList.remove("is-closing");
-  window.scrollTo({ top: 0 });
+  if (hasCompletedPrelude()) {
+    window.clearTimeout(preludeCompleteTimer);
+    window.clearInterval(homecomingInterval);
+    homecoming.classList.add("hidden");
+    markPreludeLit();
+  }
+  requestAnimationFrame(() => window.scrollTo({ top: 0, behavior: "auto" }));
 }
 
 function showMainSite(animate = true) {
   lovePrelude.classList.add("hidden");
   homecoming.classList.add("hidden");
   site.classList.remove("hidden");
+  syncCompletedControls();
   site.classList.remove("site-entering");
   if (animate) {
     void site.offsetWidth;
@@ -122,7 +161,7 @@ function resetPrelude() {
   window.clearInterval(homecomingInterval);
   litLightCount = 0;
   lightProgress.textContent = `0 / ${lightWords.length}`;
-  lovePrelude.classList.remove("is-complete");
+  lovePrelude.classList.remove("is-complete", "is-revisit");
   homecoming.classList.add("hidden");
   homecomingCount.textContent = "3";
   lightWords.forEach((word) => {
@@ -135,6 +174,7 @@ function resetPrelude() {
 
 function completePrelude() {
   localStorage.setItem("melPreludeComplete", "yes");
+  syncCompletedControls();
   lovePrelude.classList.add("is-complete");
 
   preludeCompleteTimer = window.setTimeout(() => {
@@ -158,6 +198,8 @@ if (localStorage.getItem("melBirthdayUnlocked") === "yes") {
   unlock();
 }
 
+syncCompletedControls();
+
 form.addEventListener("submit", (event) => {
   event.preventDefault();
   if (passwordInput.value.trim().toLowerCase() === CONFIG.password) {
@@ -176,6 +218,7 @@ lockButton.addEventListener("click", () => {
   gate.classList.remove("hidden");
   passwordInput.value = "";
   passwordInput.focus();
+  syncCompletedControls();
 });
 
 lightWords.forEach((word) => {
@@ -208,9 +251,19 @@ function closeTicket() {
   }, 340);
 }
 
-ticketStub?.addEventListener("click", openTicket);
+ticketStub?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  setTicketPeek(false);
+  openTicket();
+});
 ticketClose?.addEventListener("click", closeTicket);
 ticketBackdrop?.addEventListener("click", closeTicket);
+
+lovePrelude?.addEventListener("click", (event) => {
+  if (!lovePrelude.classList.contains("ticket-peeked")) return;
+  if (event.target.closest(".prelude-letter-wrap")) return;
+  setTicketPeek(false);
+});
 
 window.addEventListener("keydown", (event) => {
   if (event.key === "Escape" && !ticketOverlay?.classList.contains("hidden")) {
@@ -224,6 +277,16 @@ navItems.forEach((item) => {
 
 pageJumpButtons.forEach((button) => {
   button.addEventListener("click", () => showPage(button.dataset.pageJump));
+});
+
+returnLetterButton?.addEventListener("click", () => {
+  if (!hasCompletedPrelude()) return;
+  showPrelude();
+});
+
+returnHomeFromLetter?.addEventListener("click", () => {
+  if (!hasCompletedPrelude()) return;
+  showMainSite(false);
 });
 
 const planetPage = $("#planet");

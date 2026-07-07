@@ -1286,11 +1286,25 @@ button {
 }
 
 .crypto-hero {
+  position: relative;
   min-height: calc(100vh - 72px);
-  grid-template-columns: minmax(0, 0.98fr) minmax(330px, 0.82fr);
+  grid-template-columns: minmax(280px, 0.78fr) minmax(420px, 1fr);
+  align-items: center;
   background:
     radial-gradient(circle at 8% 32%, rgba(246, 214, 255, 0.7), transparent 18rem),
     radial-gradient(circle at 88% 28%, rgba(255, 255, 255, 0.92), transparent 20rem);
+}
+
+.hero-copy {
+  position: relative;
+  padding: clamp(28px, 5vw, 54px);
+  border: 1px solid rgba(109, 58, 172, 0.12);
+  border-radius: 30px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 251, 255, 0.86)),
+    repeating-linear-gradient(90deg, rgba(104, 79, 143, 0.04) 0 1px, transparent 1px 18px);
+  box-shadow: 0 28px 72px rgba(109, 58, 172, 0.14);
+  transform: rotate(-0.6deg);
 }
 
 .crypto-hero .pill-label {
@@ -1344,6 +1358,14 @@ button {
   box-shadow: 0 10px 24px rgba(109, 58, 172, 0.08);
 }
 
+.completed-only {
+  display: none;
+}
+
+body.prelude-complete .completed-only {
+  display: inline-flex;
+}
+
 .home-page .primary-link,
 .home-page button {
   border-color: rgba(109, 58, 172, 0.14);
@@ -1358,15 +1380,13 @@ button {
 }
 
 .hero-visual.planet-preview {
-  min-height: min(66vh, 620px);
+  min-height: min(68vh, 650px);
   display: grid;
   place-items: center;
-  border: 1px solid rgba(109, 58, 172, 0.12);
-  border-radius: 30px;
-  background:
-    radial-gradient(circle at 52% 50%, rgba(255, 255, 255, 0.82), transparent 13rem),
-    linear-gradient(135deg, rgba(255, 255, 255, 0.72), rgba(247, 230, 255, 0.66));
-  box-shadow: 0 30px 80px rgba(109, 58, 172, 0.16);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .orbit-rings {
@@ -1394,7 +1414,7 @@ button {
   position: relative;
   display: grid;
   place-items: center;
-  width: min(310px, 58vw);
+  width: min(360px, 62vw);
   aspect-ratio: 1;
   border-radius: 50%;
   background:
@@ -1429,6 +1449,29 @@ button {
 .chip-two { right: 8%; top: 20%; }
 .chip-three { right: 13%; bottom: 22%; }
 
+.home-love-footer {
+  position: absolute;
+  left: clamp(18px, 6vw, 88px);
+  bottom: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: #8b6aa4;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.home-love-footer button {
+  min-height: 30px;
+  padding: 0 13px;
+  border: 1px solid rgba(109, 58, 172, 0.12);
+  border-radius: 999px;
+  color: #6d4c82;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 10px 22px rgba(109, 58, 172, 0.1);
+}
+
 .hero-visual-card {
   border-color: rgba(109, 58, 172, 0.12);
   border-radius: 18px;
@@ -1446,6 +1489,11 @@ button {
   background:
     radial-gradient(circle at 10% 20%, rgba(238, 224, 255, 0.8), transparent 18rem),
     linear-gradient(180deg, #fffafd, #f2e5ff 54%, #fffafd);
+}
+
+.memories-panorama {
+  margin-top: clamp(64px, 9vw, 110px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .panorama-frame {
@@ -1544,16 +1592,32 @@ button {
   background: #050711;
 }
 
+.memory-section {
+  color: #3d2b4e;
+  background:
+    radial-gradient(circle at 16% 18%, rgba(238, 224, 255, 0.9), transparent 22rem),
+    radial-gradient(circle at 84% 26%, rgba(255, 255, 255, 0.86), transparent 22rem),
+    linear-gradient(180deg, #fffafd 0%, #f3e7ff 58%, #fffafd 100%);
+}
+
 .memory-section .section-heading h2,
 .game-section .section-heading h2,
 .secret-section .section-heading h2 {
   color: #fff;
 }
 
+.memory-section .section-heading h2 {
+  color: #6f35b4;
+}
+
 .memory-section .section-heading p,
 .game-section .section-heading p,
 .secret-section .section-heading p {
   color: #a8b0c4;
+}
+
+.memory-section .section-heading p {
+  color: #6d5c7d;
 }
 
 .memory-card,
@@ -1564,15 +1628,29 @@ button {
   box-shadow: 0 20px 70px rgba(0, 0, 0, 0.22);
 }
 
+.memory-card {
+  border-color: rgba(111, 53, 180, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 18px 46px rgba(93, 49, 148, 0.12);
+}
+
 .memory h3,
 .secret-content h2 {
   color: #fff;
+}
+
+.memory h3 {
+  color: #4a2f67;
 }
 
 .memory p,
 .secret-content p,
 .game-message {
   color: #a8b0c4;
+}
+
+.memory p {
+  color: #6d5c7d;
 }
 
 .memory-art,
@@ -2494,6 +2572,50 @@ button {
   margin: 0 auto;
 }
 
+.playlist-page {
+  min-height: calc(100vh - 72px);
+  padding: clamp(42px, 7vw, 86px) clamp(18px, 6vw, 88px);
+  color: #3d2b4e;
+  background:
+    radial-gradient(circle at 18% 20%, rgba(238, 224, 255, 0.88), transparent 20rem),
+    radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.82), transparent 22rem),
+    linear-gradient(180deg, #fffafd, #f3e7ff);
+}
+
+.playlist-panel {
+  position: relative;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: clamp(26px, 5vw, 44px);
+  border: 1px solid rgba(111, 53, 180, 0.12);
+  border-radius: 26px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(255, 251, 255, 0.88)),
+    repeating-linear-gradient(90deg, rgba(104, 79, 143, 0.04) 0 1px, transparent 1px 18px);
+  box-shadow: 0 26px 70px rgba(93, 49, 148, 0.14);
+}
+
+.playlist-panel .section-heading h2 {
+  color: #6f35b4;
+}
+
+.playlist-panel .section-heading p {
+  color: #6d5c7d;
+}
+
+.spotify-frame {
+  overflow: hidden;
+  border: 1px solid rgba(111, 53, 180, 0.14);
+  border-radius: 18px;
+  background: #191127;
+  box-shadow: 0 18px 46px rgba(93, 49, 148, 0.16);
+}
+
+.spotify-frame iframe {
+  display: block;
+  border: 0;
+}
+
 .gallery-panel .section-heading h2 {
   color: #5d3194;
 }
@@ -2586,7 +2708,8 @@ button {
   --letter-lit: #fffaf0;
   position: relative;
   min-height: 100vh;
-  overflow: hidden auto;
+  overflow-x: hidden;
+  overflow-y: visible;
   color: var(--letter-dim);
   background:
     radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.16), transparent 18rem),
@@ -2621,10 +2744,18 @@ button {
   opacity: 1;
 }
 
-.prelude-letter {
+.prelude-letter-wrap {
   position: relative;
   z-index: 1;
   width: min(920px, calc(100% - 40px));
+  margin: 0 auto;
+  padding-bottom: 48px;
+}
+
+.prelude-letter {
+  position: relative;
+  z-index: 3;
+  width: 100%;
   margin: 0 auto;
   padding: clamp(72px, 9vw, 118px) clamp(24px, 5vw, 64px) clamp(96px, 10vw, 150px);
   background:
@@ -2637,7 +2768,15 @@ button {
   box-shadow:
     0 38px 110px rgba(16, 8, 32, 0.42),
     0 0 0 1px rgba(255, 255, 255, 0.08) inset;
-  transform: rotate(-0.35deg);
+  transform: translateY(0) scale(1) rotate(-0.35deg);
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 420ms ease;
+}
+
+.love-prelude.ticket-peeked .prelude-letter {
+  box-shadow:
+    0 46px 130px rgba(16, 8, 32, 0.54),
+    0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+  transform: translate(18px, -22px) scale(1.012) rotate(-0.35deg);
 }
 
 .prelude-letter::before,
@@ -2849,11 +2988,32 @@ button {
   letter-spacing: 0.18em;
 }
 
+.prelude-return-actions {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 22;
+  display: none;
+}
+
+.love-prelude.is-complete .prelude-return-actions,
+.love-prelude.is-revisit .prelude-return-actions {
+  display: flex;
+}
+
+.prelude-return-actions button {
+  border-color: rgba(255, 240, 184, 0.22);
+  border-radius: 999px;
+  color: #2b1d3a;
+  background: #fff0b8;
+  box-shadow: 0 16px 44px rgba(0, 0, 0, 0.22);
+}
+
 .ticket-stub {
   position: absolute;
-  left: -112px;
+  left: -84px;
   bottom: clamp(86px, 12vw, 150px);
-  z-index: 1;
+  z-index: 2;
   width: 168px;
   min-height: 58px;
   display: grid;
@@ -2871,6 +3031,7 @@ button {
   font-family: "Share Tech Mono", "SFMono-Regular", Consolas, monospace;
   text-align: left;
   transform: rotate(-3deg);
+  transition: transform 420ms cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 320ms ease, filter 320ms ease;
   animation: ticketPulse 1.9s ease-in-out infinite;
 }
 
@@ -2883,6 +3044,11 @@ button {
   box-shadow:
     0 0 24px rgba(252, 238, 9, 0.46),
     0 0 34px rgba(0, 240, 255, 0.34);
+}
+
+.love-prelude.ticket-peeked .ticket-stub {
+  filter: brightness(1.08);
+  transform: translateX(-10px) rotate(-3deg);
 }
 
 .ticket-stub span {
@@ -2899,7 +3065,7 @@ button {
 @keyframes ticketPulse {
   50% {
     filter: brightness(1.12);
-    translate: 4px 0;
+    translate: 2px 0;
   }
 }
 
@@ -3150,8 +3316,11 @@ button {
 }
 
 @media (max-width: 700px) {
-  .prelude-letter {
+  .prelude-letter-wrap {
     width: min(100% - 34px, 820px);
+  }
+
+  .prelude-letter {
     padding-top: 78px;
   }
 
