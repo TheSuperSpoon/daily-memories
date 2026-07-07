@@ -130,9 +130,8 @@
         <nav class="topbar" aria-label="Birthday world navigation">
           <button class="nav-item is-active" type="button" data-page="home"><span>01</span> Home</button>
           <button class="nav-item" type="button" data-page="glimmer"><span>02</span> 微光收集</button>
-          <button class="nav-item" type="button" data-page="memories"><span>03</span> Memories</button>
-          <button class="nav-item" type="button" data-page="game"><span>04</span> Game</button>
-          <button class="nav-item" type="button" data-page="secret"><span>05</span> Surprise</button>
+          <button class="nav-item" type="button" data-page="gallery"><span>03</span> Gallery</button>
+          <button class="nav-item" type="button" data-page="memories"><span>04</span> Memories</button>
         </nav>
 
         <section id="home" class="page is-active home-page">
@@ -172,50 +171,40 @@
           <section class="panorama-sequence" aria-label="Panoramic scrolling image sequence">
             <figure class="panorama-frame" data-panel="0">
               <img src="./assets/jinx.png" alt="Jinx from Arcane inspired birthday reference" />
+              <figcaption><span>Mel likes</span><strong>Jinx</strong></figcaption>
             </figure>
             <figure class="panorama-frame" data-panel="1">
               <img src="./assets/yoru.jpg" alt="Yoru Valorant wallpaper" />
+              <figcaption><span>Mel likes</span><strong>Yoru / Valorant</strong></figcaption>
             </figure>
             <figure class="panorama-frame" data-panel="2">
               <img src="./assets/fleabag.jpg" alt="Fleabag wallpaper" />
+              <figcaption><span>Mel likes</span><strong>Fleabag</strong></figcaption>
             </figure>
             <figure class="panorama-frame" data-panel="3">
               <img src="./assets/dead-poets.jpg" alt="Dead Poets Society wallpaper" />
+              <figcaption><span>Mel likes</span><strong>Dead Poets Society</strong></figcaption>
             </figure>
             <figure class="panorama-frame" data-panel="4">
               <img src="./assets/the-strokes.jpg" alt="The Strokes wallpaper" />
+              <figcaption><span>Mel likes</span><strong>The Strokes</strong></figcaption>
             </figure>
             <figure class="panorama-frame" data-panel="5">
               <img src="./assets/gojira.jpg" alt="Gojira wallpaper" />
+              <figcaption><span>Mel likes</span><strong>Gojira</strong></figcaption>
             </figure>
             <figure class="panorama-frame" data-panel="6">
               <img src="./assets/cyberpunk.jpeg" alt="Cyberpunk visual" />
+              <figcaption><span>Mel likes</span><strong>Cyberpunk: Edgerunners</strong></figcaption>
             </figure>
             <figure class="panorama-frame" data-panel="7">
               <img src="./assets/omori.jpg" alt="Omori computer wallpaper" />
+              <figcaption><span>Mel likes</span><strong>OMORI</strong></figcaption>
             </figure>
             <figure class="panorama-frame" data-panel="8">
               <img src="./assets/nana.jpg" alt="Nana anime wallpaper" />
+              <figcaption><span>Mel likes</span><strong>NANA</strong></figcaption>
             </figure>
-          </section>
-
-          <section class="home-terminal reveal-card">
-            <div>
-              <p class="eyebrow">Love metrics</p>
-              <h3><span data-count-target="520">0</span>+ “I love you” messages</h3>
-              <p>Placeholder count. After you count the real number, change the target in the HTML.</p>
-            </div>
-            <div>
-              <p class="eyebrow">Checkpoint</p>
-              <h3>3/29</h3>
-              <p>The day you started the romantic relationship.</p>
-            </div>
-            <div>
-              <p class="eyebrow">September</p>
-              <h3>CN → US</h3>
-              <p>Two years apart before you can follow.</p>
-            </div>
-            <button class="primary-link" type="button" data-page-jump="memories">Enter the archive</button>
           </section>
         </section>
 
@@ -300,14 +289,6 @@
               </section>
             </section>
 
-            <section class="gallery-panel">
-              <div class="section-heading">
-                <p class="eyebrow">Gallery Timeline</p>
-                <h2>收集到的微光</h2>
-                <p>这里会显示每日上传的照片。本地原型会保存在当前浏览器里。</p>
-              </div>
-              <div id="glimmerGallery" class="glimmer-gallery"></div>
-            </section>
           </div>
 
           <div id="uploadModal" class="glimmer-modal hidden" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
@@ -347,6 +328,17 @@
               <p id="retroModeHint" class="retro-hint"></p>
             </div>
           </div>
+        </section>
+
+        <section id="gallery" class="page gallery-page">
+          <section class="gallery-panel">
+            <div class="section-heading">
+              <p class="eyebrow">Gallery Timeline</p>
+              <h2>收集到的微光</h2>
+              <p>每天上传过的截图和照片会集中到这里，慢慢变成你们两年的时间线。</p>
+            </div>
+            <div id="glimmerGallery" class="glimmer-gallery"></div>
+          </section>
         </section>
 
         <section id="planet" class="page planet-page">
@@ -442,15 +434,15 @@
                   <h3>Memory Timeline</h3>
                   <p>Photos, voice notes, chats, and tiny moments that light up.</p>
                 </button>
-                <button class="portal-card" type="button" data-page-jump="game">
+                <button class="portal-card" type="button" data-page-jump="gallery">
                   <span>02</span>
-                  <h3>Mini Game</h3>
-                  <p>Catch hearts with a drum pad and unlock the surprise.</p>
+                  <h3>Gallery</h3>
+                  <p>Every daily upload gathers into one private timeline.</p>
                 </button>
-                <button class="portal-card" type="button" data-page-jump="secret">
+                <button class="portal-card" type="button" data-page-jump="glimmer">
                   <span>03</span>
-                  <h3>Final Surprise</h3>
-                  <p>A place for the song, date plan, QR code, gift, or video.</p>
+                  <h3>微光收集</h3>
+                  <p>The daily ritual: one screenshot from each of you.</p>
                 </button>
               </div>
             </div>
@@ -466,36 +458,6 @@
           <div id="timeline" class="timeline" aria-label="Relationship memory timeline"></div>
         </section>
 
-        <section id="game" class="page game-section">
-          <div class="section-heading">
-            <p class="eyebrow">Page three</p>
-            <h2>Catch the Hearts</h2>
-            <p>Move the purple drum pad and catch 20 hearts to unlock the final surprise page.</p>
-          </div>
-          <div class="game-shell">
-            <div class="game-hud">
-              <span>Score: <strong id="score">0</strong>/20</span>
-              <button id="startGame" type="button">Start</button>
-            </div>
-            <canvas id="heartGame" width="900" height="520" aria-label="Catch falling hearts game"></canvas>
-            <p id="gameMessage" class="game-message">Use your mouse or finger to move.</p>
-          </div>
-        </section>
-
-        <section id="secret" class="page secret-section locked">
-          <div class="secret-content">
-            <p class="eyebrow">Final page</p>
-            <h2>Mel, this part is for the ending.</h2>
-            <p>
-              Add the real birthday surprise here: the date plan, a video, a QR code, or the gift reveal.
-            </p>
-            <div class="music-box">
-              <p>Birthday soundtrack slot</p>
-              <audio controls src="./assets/your-song.mp3"></audio>
-              <small>Put your song file at <code>outputs/assets/your-song.mp3</code> when you choose it.</small>
-            </div>
-          </div>
-        </section>
       </section>
     </main>
 

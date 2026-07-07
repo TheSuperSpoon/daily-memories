@@ -826,12 +826,13 @@ resizeSky();
 drawSky();
 
 const gameCanvas = $("#heartGame");
-const gameCtx = gameCanvas.getContext("2d");
+const gameCtx = gameCanvas?.getContext("2d");
 const scoreEl = $("#score");
 const startGame = $("#startGame");
 const gameMessage = $("#gameMessage");
 const secret = $("#secret");
 
+if (gameCanvas && gameCtx && scoreEl && startGame && gameMessage) {
 let player = { x: gameCanvas.width / 2, y: gameCanvas.height - 50, w: 140, h: 24 };
 let hearts = [];
 let score = 0;
@@ -908,7 +909,7 @@ function gameLoop(timestamp) {
       scoreEl.textContent = score;
       if (score >= 20) {
         playing = false;
-        secret.classList.remove("locked");
+        secret?.classList.remove("locked");
         gameMessage.textContent = "Surprise page unlocked. Open the Surprise tab.";
       }
       return false;
@@ -939,9 +940,10 @@ startGame.addEventListener("click", () => {
   playing = true;
   lastSpawn = 0;
   scoreEl.textContent = "0";
-  secret.classList.add("locked");
+  secret?.classList.add("locked");
   gameMessage.textContent = "Catch 20 hearts.";
 });
 
 drawGame();
 requestAnimationFrame(gameLoop);
+}
