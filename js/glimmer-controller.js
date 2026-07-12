@@ -66,6 +66,7 @@ let initializing = null;
 let pendingFinalizeId = null;
 let pendingAction = null;
 let dashboardClockOffset = 0;
+let sessionGeneration = 0;
 const galleryRequests = new LatestRequest();
 
 const imageObserver = typeof IntersectionObserver === "function"
@@ -398,7 +399,9 @@ async function refreshMonth(date) {
 }
 
 async function afterMutation(date) {
+  const generation = sessionGeneration;
   await refreshMonth(monthFromDateKey(date));
+  if (generation !== sessionGeneration || !dashboard) return;
   const day = currentMonthData(monthFromDateKey(date)).days[date] ?? {};
   if (date < dashboard.local_today && isCompleteDay(day)) {
     await repository.completeRetroGlimmer(appConfig.spaceId, date);
@@ -407,6 +410,7 @@ async function afterMutation(date) {
   }
   await repository.grantStreakRewards(appConfig.spaceId);
   await refreshDashboard();
+  if (generation !== sessionGeneration) return;
   renderGlimmer();
   if (monthKey(galleryMonth) === monthKey(monthFromDateKey(date))) await renderGallery(true);
 }
@@ -420,6 +424,7 @@ async function handleUpload(event) {
     return;
   }
   elements.uploadSubmit.disabled = true;
+  const generation = sessionGeneration;
   setText(elements.uploadStatus, "Validating image...");
   try {
     await repository.uploadGlimmer({
@@ -429,6 +434,7 @@ async function handleUpload(event) {
       file,
       onProgress: ({ phase }) => setText(elements.uploadStatus, phase === "uploading" ? "Uploading private image..." : "Confirming upload..."),
     });
+    if (generation !== sessionGeneration) return;
     setText(elements.uploadStatus, "Saved.");
     await afterMutation(selectedUploadDate);
     closeModals();
@@ -552,20 +558,26 @@ async function setGalleryMonth(offset) {
 export async function initializeGlimmerSession() {
   if (initialized) return;
   if (initializing) return initializing;
-  initializing = (async () => {
+  const generation = sessionGeneration;
+  const task = (async () => {
     dashboard = await repository.getDashboard(appConfig.spaceId);
+    if (generation !== sessionGeneration) return;
     dashboardClockOffset = new Date(dashboard.server_now).getTime() - Date.now();
     activeDate = dashboard.local_today >= CONFIG.glimmerStart ? dashboard.local_today : CONFIG.glimmerStart;
     calendarMonth = monthFromDateKey(activeDate);
     galleryMonth = monthFromDateKey(dashboard.local_today);
     await loadMonth(calendarMonth);
+    if (generation !== sessionGeneration) return;
     initialized = true;
     renderGlimmer();
   })().catch((error) => {
     setText(elements.dailyCopy, error.message);
     if (error.code === "SESSION_EXPIRED") window.dispatchEvent(new CustomEvent("app-session-expired"));
     throw error;
-  }).finally(() => { initializing = null; });
+  }).finally(() => {
+    if (initializing === task) initializing = null;
+  });
+  initializing = task;
   return initializing;
 }
 
@@ -581,6 +593,7 @@ export async function activateGalleryPage() {
 }
 
 export function resetGlimmerSession() {
+  sessionGeneration += 1;
   initialized = false;
   initializing = null;
   dashboard = null;
@@ -593,6 +606,8 @@ export function resetGlimmerSession() {
   monthRequests.clear();
   clearUrlCache();
   imageObserver?.disconnect();
+  closeModals();
+  elements.uploadForm?.reset();
   elements.gallery?.replaceChildren();
 }
 
