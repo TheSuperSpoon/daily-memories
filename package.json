@@ -1,10 +1,12 @@
 {
   "private": true,
+  "type": "module",
   "scripts": {
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "db:reset": "supabase db reset",
-    "db:test": "supabase test db"
+    "db:test": "supabase test db",
+    "test": "node --test tests/*.test.js"
   },
   "devDependencies": {
     "supabase": "^2.109.1"
