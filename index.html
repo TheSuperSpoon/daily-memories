@@ -14,14 +14,25 @@
         <div class="gate-panel">
           <p class="eyebrow">Private birthday site</p>
           <h1>For Mel</h1>
-          <p class="gate-copy">A private birthday protocol made just for July 20.</p>
-          <form id="passwordForm" class="password-form">
-            <label for="passwordInput">Enter the password</label>
-            <div class="password-row">
-              <input id="passwordInput" type="password" autocomplete="off" placeholder="hint: mel + birthday" />
-              <button type="submit">Unlock</button>
+          <p id="authGateCopy" class="gate-copy">Sign in to the private world shared by Ray and Mel.</p>
+          <div class="auth-mode-switch" role="tablist" aria-label="Account access">
+            <button id="showLoginMode" class="is-active" type="button" role="tab" aria-selected="true">Sign in</button>
+            <button id="showRegisterMode" type="button" role="tab" aria-selected="false">Register</button>
+          </div>
+          <form id="authForm" class="password-form">
+            <label for="authEmail">Email</label>
+            <input id="authEmail" type="email" autocomplete="email" required placeholder="you@example.com" />
+            <label id="displayNameLabel" class="hidden" for="authDisplayName">Display name</label>
+            <input id="authDisplayName" class="hidden" type="text" maxlength="30" autocomplete="nickname" placeholder="Ray or Mel" />
+            <label for="authPassword">Password</label>
+            <input id="authPassword" type="password" minlength="8" autocomplete="current-password" required placeholder="At least 8 characters" />
+            <label id="confirmPasswordLabel" class="hidden" for="authConfirmPassword">Confirm password</label>
+            <input id="authConfirmPassword" class="hidden" type="password" minlength="8" autocomplete="new-password" placeholder="Repeat password" />
+            <button id="authSubmitButton" type="submit">Sign in</button>
+            <div class="auth-secondary-actions">
+              <button id="forgotPasswordButton" type="button">Forgot password?</button>
             </div>
-            <p id="passwordMessage" class="form-message" aria-live="polite"></p>
+            <p id="authMessage" class="form-message" aria-live="polite"></p>
           </form>
         </div>
       </section>
@@ -496,6 +507,7 @@
       </section>
     </main>
 
-    <script src="./script.js"></script>
+    <script src="./config.js"></script>
+    <script type="module" src="./script.js"></script>
   </body>
 </html>

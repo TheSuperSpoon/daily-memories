@@ -1,5 +1,6 @@
+import { appConfig, repository } from "./js/app-services.js";
+
 const CONFIG = {
-  password: "mel720",
   birthday: "2026-07-20T00:00:00",
   glimmerStart: "2026-07-20",
 };
@@ -52,9 +53,19 @@ const memories = [
 const $ = (selector) => document.querySelector(selector);
 const gate = $("#gate");
 const site = $("#site");
-const form = $("#passwordForm");
-const passwordInput = $("#passwordInput");
-const passwordMessage = $("#passwordMessage");
+const authForm = $("#authForm");
+const authEmail = $("#authEmail");
+const authDisplayName = $("#authDisplayName");
+const authPassword = $("#authPassword");
+const authConfirmPassword = $("#authConfirmPassword");
+const displayNameLabel = $("#displayNameLabel");
+const confirmPasswordLabel = $("#confirmPasswordLabel");
+const authSubmitButton = $("#authSubmitButton");
+const authMessage = $("#authMessage");
+const authGateCopy = $("#authGateCopy");
+const showLoginModeButton = $("#showLoginMode");
+const showRegisterModeButton = $("#showRegisterMode");
+const forgotPasswordButton = $("#forgotPasswordButton");
 const lockButton = $("#lockButton");
 const lovePrelude = $("#lovePrelude");
 const lightWords = [...document.querySelectorAll(".light-word")];
@@ -74,6 +85,8 @@ const pages = [...document.querySelectorAll(".page")];
 let litLightCount = 0;
 let preludeCompleteTimer;
 let homecomingInterval;
+let authMode = "login";
+let authenticatedSession = null;
 
 function hasCompletedPrelude() {
   return localStorage.getItem("melPreludeComplete") === "yes";
@@ -118,7 +131,6 @@ function showPage(pageId) {
 
 function unlock() {
   gate.classList.add("hidden");
-  localStorage.setItem("melBirthdayUnlocked", "yes");
   if (localStorage.getItem("melPreludeComplete") === "yes") {
     showMainSite(false);
   } else {
@@ -194,32 +206,122 @@ function completePrelude() {
   }, 1700);
 }
 
-if (localStorage.getItem("melBirthdayUnlocked") === "yes") {
-  unlock();
-}
-
 syncCompletedControls();
 
-form.addEventListener("submit", (event) => {
-  event.preventDefault();
-  if (passwordInput.value.trim().toLowerCase() === CONFIG.password) {
-    unlock();
-    return;
-  }
-  passwordMessage.textContent = "Almost. Try her name plus 720.";
-});
+function setAuthMode(mode) {
+  authMode = mode;
+  const registering = mode === "register";
+  showLoginModeButton.classList.toggle("is-active", !registering);
+  showRegisterModeButton.classList.toggle("is-active", registering);
+  showLoginModeButton.setAttribute("aria-selected", String(!registering));
+  showRegisterModeButton.setAttribute("aria-selected", String(registering));
+  [displayNameLabel, authDisplayName, confirmPasswordLabel, authConfirmPassword]
+    .forEach((element) => element.classList.toggle("hidden", !registering));
+  authDisplayName.required = registering;
+  authConfirmPassword.required = registering;
+  authPassword.autocomplete = registering ? "new-password" : "current-password";
+  authSubmitButton.textContent = registering ? "Create account" : "Sign in";
+  forgotPasswordButton.classList.toggle("hidden", registering);
+  authGateCopy.textContent = registering
+    ? "Two accounts, one shared world. The first two registrations claim Ray and Mel."
+    : "Sign in to the private world shared by Ray and Mel.";
+  authMessage.textContent = "";
+}
 
-lockButton.addEventListener("click", () => {
-  localStorage.removeItem("melBirthdayUnlocked");
-  localStorage.removeItem("melPreludeComplete");
+function setAuthBusy(busy, message = "") {
+  [...authForm.elements].forEach((element) => { element.disabled = busy; });
+  showLoginModeButton.disabled = busy;
+  showRegisterModeButton.disabled = busy;
+  if (message) authMessage.textContent = message;
+}
+
+function showSignedOut(message = "") {
+  authenticatedSession = null;
   resetPrelude();
   lovePrelude.classList.add("hidden");
   site.classList.add("hidden");
   gate.classList.remove("hidden");
-  passwordInput.value = "";
-  passwordInput.focus();
+  authPassword.value = "";
+  authConfirmPassword.value = "";
+  authMessage.textContent = message;
+  authEmail.focus();
   syncCompletedControls();
+}
+
+async function handleAuthSubmit(event) {
+  event.preventDefault();
+  const email = authEmail.value.trim();
+  const password = authPassword.value;
+  setAuthBusy(true, authMode === "register" ? "Creating your account..." : "Signing in...");
+  try {
+    if (authMode === "register") {
+      if (password !== authConfirmPassword.value) throw new Error("Passwords do not match.");
+      const data = await repository.signUp({ email, password, displayName: authDisplayName.value });
+      if (!data.session) throw new Error("Account created, but no session was returned. Please sign in.");
+      authenticatedSession = data.session;
+    } else {
+      const data = await repository.signIn(email, password);
+      authenticatedSession = data.session;
+    }
+    authMessage.textContent = "";
+    unlock();
+  } catch (error) {
+    authMessage.textContent = error.code === "REGISTRATION_LIMIT_REACHED"
+      ? "Both member accounts have already been claimed."
+      : error.message;
+  } finally {
+    setAuthBusy(false);
+  }
+}
+
+showLoginModeButton.addEventListener("click", () => setAuthMode("login"));
+showRegisterModeButton.addEventListener("click", () => setAuthMode("register"));
+authForm.addEventListener("submit", handleAuthSubmit);
+forgotPasswordButton.addEventListener("click", async () => {
+  const email = authEmail.value.trim();
+  if (!email) {
+    authMessage.textContent = "Enter your email first.";
+    authEmail.focus();
+    return;
+  }
+  setAuthBusy(true, "Requesting a recovery email...");
+  try {
+    await repository.resetPassword(email, new URL("./update-password.html", window.location.href).href);
+    authMessage.textContent = "If the account exists, a recovery email will arrive shortly.";
+  } catch (error) {
+    authMessage.textContent = error.code === "NETWORK_ERROR"
+      ? error.message
+      : "If the account exists, a recovery email will arrive shortly.";
+  } finally {
+    setAuthBusy(false);
+  }
 });
+
+lockButton.textContent = "Sign out";
+lockButton.addEventListener("click", async () => {
+  try { await repository.signOut(); } catch (error) { console.error("Sign out failed", error); }
+  showSignedOut();
+});
+
+repository.onAuthStateChange((event, session) => {
+  if (event === "SIGNED_OUT") showSignedOut("You have signed out.");
+  if ((event === "SIGNED_IN" || event === "TOKEN_REFRESHED") && session) authenticatedSession = session;
+});
+
+setAuthMode("login");
+async function initializeAuth() {
+  setAuthBusy(true, "Restoring session...");
+  try {
+    authenticatedSession = await repository.getSession();
+    if (authenticatedSession) unlock();
+    else showSignedOut();
+  } catch (error) {
+    showSignedOut(error.message);
+  } finally {
+    setAuthBusy(false);
+  }
+}
+initializeAuth();
 
 lightWords.forEach((word) => {
   word.setAttribute("aria-pressed", "false");
