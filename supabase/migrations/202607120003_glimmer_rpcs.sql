@@ -45,7 +45,7 @@ begin
   select * into a from public.glimmer_assets where glimmer_id=g.id and is_current and deleted_at is null;
   if a.provider <> 'supabase' or not exists (
     select 1 from storage.objects o where o.bucket_id=a.bucket and o.name=a.object_key
-      and o.owner_id=auth.uid() and o.metadata->>'mimetype'=a.content_type
+      and o.owner_id=auth.uid()::text and o.metadata->>'mimetype'=a.content_type
   ) then raise exception using errcode='P0001', message='OBJECT_NOT_FOUND_OR_MISMATCH'; end if;
   update public.glimmers set status='ready',ready_at=coalesce(ready_at,now()) where id=g.id returning * into g;
   return to_jsonb(g);

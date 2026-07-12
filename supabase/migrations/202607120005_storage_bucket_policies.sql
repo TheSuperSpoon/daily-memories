@@ -6,7 +6,7 @@ on conflict(id) do update set public=false,file_size_limit=excluded.file_size_li
 create policy glimmers_storage_insert_owner
 on storage.objects for insert to authenticated
 with check (
-  bucket_id='glimmers' and owner_id=auth.uid() and exists (
+  bucket_id='glimmers' and owner_id=auth.uid()::text and exists (
     select 1 from public.glimmer_assets a join public.glimmers g on g.id=a.glimmer_id
     where a.bucket=bucket_id and a.object_key=name and a.provider='supabase'
       and a.is_current and a.deleted_at is null and g.status='pending'
@@ -28,7 +28,7 @@ using (
 create policy glimmers_storage_delete_owner
 on storage.objects for delete to authenticated
 using (
-  bucket_id='glimmers' and owner_id=auth.uid() and exists (
+  bucket_id='glimmers' and owner_id=auth.uid()::text and exists (
     select 1 from public.glimmer_assets a join public.glimmers g on g.id=a.glimmer_id
     where a.bucket=bucket_id and a.object_key=name and a.provider='supabase'
       and a.is_current and a.deleted_at is null and g.deleted_at is null
