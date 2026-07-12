@@ -47,7 +47,13 @@ export class GlimmerRepository {
     if (beginError) throw this.#error(beginError);
     const adapter = this.storageFactory.forAsset(begin.asset);
     onProgress?.({ phase: 'uploading', percent: 0 });
-    await adapter.upload(begin.asset, file);
+    try {
+      await adapter.upload(begin.asset, file);
+    } catch (uploadError) {
+      const { error: cleanupError } = await this.supabase.rpc('cancel_glimmer_upload', { p_id: begin.id });
+      if (cleanupError) Object.assign(uploadError, { cleanupPending: true, glimmerId: begin.id });
+      throw uploadError;
+    }
     onProgress?.({ phase: 'finalizing', percent: 100 });
     const { data, error } = await this.supabase.rpc('finalize_glimmer_upload', { p_id: begin.id });
     if (error) throw this.#error(error, { retryable: true, glimmerId: begin.id });

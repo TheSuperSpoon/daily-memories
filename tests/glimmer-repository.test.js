@@ -39,3 +39,18 @@ test('finalize failure is exposed as retryable without leaking SDK shape', async
   await assert.rejects(h.repository.uploadGlimmer({ file: { type: 'image/png', size: 2 } }),
     (error) => error.retryable && error.glimmerId === 'g1' && error.code === 'BACKEND_ERROR');
 });
+
+test('upload failure cancels pending metadata', async () => {
+  const calls = [];
+  const repository = new GlimmerRepository({
+    supabase: { auth: {}, rpc: async (name) => {
+      calls.push(name);
+      if (name === 'begin_glimmer_upload') return { data: { id: 'g1', asset: { provider: 'supabase' } }, error: null };
+      return { data: { cancelled: true }, error: null };
+    } },
+    storageFactory: { forAsset: () => ({ upload: async () => { throw Object.assign(new Error('no network'), { code: 'UPLOAD_REJECTED' }); } }) }
+  });
+  await assert.rejects(repository.uploadGlimmer({ file: { type: 'image/webp', size: 3 } }),
+    (error) => error.code === 'UPLOAD_REJECTED');
+  assert.deepEqual(calls, ['begin_glimmer_upload', 'cancel_glimmer_upload']);
+});
