@@ -4,3 +4,11 @@ export class StoragePort {
   async getReadableUrl(_asset, _options = {}) { throw new Error('Not implemented'); }
   async remove(_asset) { throw new Error('Not implemented'); }
 }
+
+export class StorageError extends Error {
+  constructor(code, message, options = {}) {
+    super(message, options);
+    this.name = 'StorageError';
+    this.code = code;
+  }
+}

@@ -5,7 +5,11 @@ export class StorageAdapterFactory {
 
   forAsset(asset) {
     const adapter = this.adapters.get(asset.provider);
-    if (!adapter) throw new Error(`Unsupported storage provider: ${asset.provider}`);
+    if (!adapter) {
+      const error = new Error(`Unsupported storage provider: ${asset.provider}`);
+      error.code = 'UNSUPPORTED_STORAGE_PROVIDER';
+      throw error;
+    }
     return adapter;
   }
 }
