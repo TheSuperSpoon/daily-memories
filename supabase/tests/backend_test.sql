@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(17);
+select plan(19);
 
 select has_table('public','spaces','spaces exists');
 select has_table('public','glimmers','glimmers exists');
@@ -43,6 +43,23 @@ select throws_ok($$insert into public.reward_ledger(space_id,event_type,amount,s
  values('00000000-0000-0000-0000-000000000001','streak_earned',1,current_date,10,'forbidden')$$,
  '42501',null,'client cannot write reward ledger');
 
+reset role;
+insert into public.glimmers(id,space_id,owner_id,role,glimmer_date,status,created_at,ready_at)
+values
+ ('20000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000001','ray',current_date-30,'ready',now()-interval '23 hours 59 minutes 59 seconds',now()),
+ ('20000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000001',
+  '10000000-0000-0000-0000-000000000001','ray',current_date-31,'ready',now()-interval '24 hours',now());
+insert into public.glimmer_assets(glimmer_id,bucket,object_key,content_type,size_bytes)
+values
+ ('20000000-0000-0000-0000-000000000001','glimmers','boundary/inside.png','image/png',1),
+ ('20000000-0000-0000-0000-000000000002','glimmers','boundary/exact.png','image/png',1);
+set local role authenticated;
+select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
+select is(public.can_delete_glimmer_object('glimmers','boundary/inside.png'),true,
+ 'delete is allowed at 23:59:59');
+select is(public.can_delete_glimmer_object('glimmers','boundary/exact.png'),false,
+ 'delete is rejected at exactly 24:00:00');
 reset role;
 insert into public.glimmers(space_id,owner_id,role,glimmer_date,status,ready_at,created_at)
 select '00000000-0000-0000-0000-000000000001',

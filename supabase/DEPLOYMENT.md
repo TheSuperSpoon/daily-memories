@@ -15,7 +15,8 @@
 - `supabase db push --linked`: migrations 001-011 applied successfully.
 - `supabase db lint --linked --schema public --fail-on warning`: no warnings or errors.
 - `supabase db query --linked --file supabase/tests/backend_test.sql`: pgTAP reached
-  `ok 17` and returned no failure diagnostics; the test transaction rolled back.
+  `ok 19`, including 23:59:59/24:00:00 delete boundaries, and returned no failure
+  diagnostics; the test transaction rolled back.
 - `npm test`: 8/8 StoragePort and repository contract tests passed.
 - Real Auth concurrency smoke: three simultaneous signups produced two successful
   users and one rejection; cleanup restored zero users and two open slots.
