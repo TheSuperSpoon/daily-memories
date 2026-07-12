@@ -61,6 +61,35 @@ const glimmers = await Promise.all(sessions.map(async (session, index) => {
   return { id: begin.id, asset, session };
 }));
 
+const forged = await fetch(`${url}/storage/v1/object/glimmers/spaces/forged/users/forged/image.png`, {
+  method: 'POST', headers: { apikey: key, Authorization: `Bearer ${sessions[0].access_token}`,
+    'Content-Type': 'image/png', 'x-upsert': 'false' }, body: randomPng()
+});
+assert.ok(!forged.ok, 'upload without matching pending metadata must fail');
+
+const overwriteTarget = glimmers[0];
+const overwriteKey = overwriteTarget.asset.object_key.split('/').map(encodeURIComponent).join('/');
+const overwrite = await fetch(`${url}/storage/v1/object/${overwriteTarget.asset.bucket}/${overwriteKey}`, {
+  method: 'POST', headers: { apikey: key, Authorization: `Bearer ${overwriteTarget.session.access_token}`,
+    'Content-Type': 'image/png', 'x-upsert': 'true' }, body: randomPng()
+});
+assert.ok(!overwrite.ok, 'upsert overwrite must fail');
+
+const publicRead = await fetch(`${url}/storage/v1/object/public/${overwriteTarget.asset.bucket}/${overwriteKey}`);
+assert.notEqual(publicRead.status, 200, 'private bucket must not expose a public URL');
+
+const signedResponse = await fetch(`${url}/storage/v1/object/sign/${overwriteTarget.asset.bucket}/${overwriteKey}`, {
+  method: 'POST', headers: { ...headers, Authorization: `Bearer ${sessions[1].access_token}` },
+  body: JSON.stringify({ expiresIn: 3 })
+});
+assert.ok(signedResponse.ok, `signed URL creation failed: ${signedResponse.status}`);
+const signed = await signedResponse.json();
+const signedPath = signed.signedURL ?? signed.signedUrl;
+const signedUrl = new URL(signedPath.startsWith('/object/') ? `/storage/v1${signedPath}` : signedPath, url).href;
+assert.equal((await fetch(signedUrl)).status, 200, 'fresh signed URL must read the object');
+await new Promise((resolve) => setTimeout(resolve, 4200));
+assert.notEqual((await fetch(signedUrl)).status, 200, 'expired signed URL must fail');
+
 const rewardResults = await Promise.all(Array.from({ length: 10 }, (_, index) =>
   rpc(sessions[index % 2], 'grant_streak_rewards', { p_space_id: spaceId })));
 assert.equal(rewardResults.reduce((sum, result) => sum + Number(result.awarded), 0), 1,
@@ -112,4 +141,5 @@ for (const item of glimmers) {
 }
 console.log(JSON.stringify({ passed: true, signedIn: 2, uploaded: 2, peerReads: 4,
   forbiddenDeletes: 1, ownerDeletes: 2, concurrentRewardCalls: 10,
-  concurrentRetroCalls: 10, duplicateDeleteCalls: 4 }));
+  concurrentRetroCalls: 10, duplicateDeleteCalls: 4, forgedUploadsRejected: 1,
+  overwritesRejected: 1, publicReadsRejected: 1, signedUrlExpiryVerified: 1 }));

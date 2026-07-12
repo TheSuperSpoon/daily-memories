@@ -25,6 +25,8 @@
 - Concurrency smoke: two uploads ran in parallel; ten simultaneous reward grants
   produced one `+1`; ten simultaneous retro completions produced one `-1`; four
   duplicate delete completions were idempotent. Cleanup verified zero reward rows.
+- Storage abuse smoke rejected a forged object path, upsert overwrite and public URL;
+  a signed URL read successfully before its TTL and failed after expiration.
 - Read-only smoke query: 11 migrations, two open registration slots, zero users,
   private bucket correct, seven public policies and three Storage object policies.
 - Permission audit: all seven public tables have RLS, anonymous users can execute
