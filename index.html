@@ -283,13 +283,6 @@
               <h3 id="uploadTitle">今日微光</h3>
               <p id="uploadDateLabel"></p>
               <label>
-                上传者
-                <select id="uploaderSelect">
-                  <option value="ray">Ray</option>
-                  <option value="mel">Mel</option>
-                </select>
-              </label>
-              <label>
                 一张照片
                 <input id="photoInput" type="file" accept="image/*" />
               </label>
@@ -297,8 +290,24 @@
                 一句话
                 <textarea id="photoNote" rows="3" placeholder="今天想留住的微光..."></textarea>
               </label>
-              <button type="submit">Save Light</button>
+              <p id="uploadStatus" class="glimmer-inline-status" role="status"></p>
+              <button id="retryFinalizeButton" class="hidden" type="button">继续确认</button>
+              <button id="uploadSubmitButton" type="submit">Save Light</button>
             </form>
+          </div>
+
+          <div id="glimmerActionModal" class="glimmer-modal hidden" role="dialog" aria-modal="true" aria-labelledby="glimmerActionTitle">
+            <button class="modal-backdrop" type="button" data-close-modal></button>
+            <div class="upload-card">
+              <button class="modal-close" type="button" data-close-modal>×</button>
+              <p class="eyebrow">Please confirm</p>
+              <h3 id="glimmerActionTitle">确认操作</h3>
+              <p id="glimmerActionCopy"></p>
+              <div class="glimmer-action-row">
+                <button type="button" data-close-modal>取消</button>
+                <button id="glimmerActionConfirm" type="button">确认</button>
+              </div>
+            </div>
           </div>
 
           <div id="backpackModal" class="glimmer-modal hidden" role="dialog" aria-modal="true" aria-labelledby="backpackTitle">
@@ -321,6 +330,13 @@
               <h2>收集到的微光</h2>
               <p>每天上传过的截图和照片会集中到这里，慢慢变成你们两年的时间线。</p>
             </div>
+            <div class="gallery-month-toolbar" aria-label="Gallery month">
+              <button id="galleryPrevMonth" type="button" aria-label="Previous gallery month">‹</button>
+              <strong id="galleryMonthTitle"></strong>
+              <button id="galleryNextMonth" type="button" aria-label="Next gallery month">›</button>
+            </div>
+            <p id="galleryStatus" class="glimmer-inline-status" role="status"></p>
+            <button id="galleryRetryButton" class="gallery-retry hidden" type="button">Retry this month</button>
             <div id="glimmerGallery" class="glimmer-gallery"></div>
           </section>
         </section>

@@ -2042,6 +2042,56 @@ body.prelude-complete .completed-only {
   gap: 14px;
 }
 
+.gallery-month-toolbar,
+.glimmer-action-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.85rem;
+}
+
+.gallery-month-toolbar {
+  margin: 1rem 0 0.35rem;
+}
+
+.gallery-month-toolbar strong {
+  min-width: 10rem;
+  text-align: center;
+}
+
+.glimmer-inline-status {
+  min-height: 1.4em;
+  color: var(--muted);
+  text-align: center;
+}
+
+.gallery-retry {
+  display: block;
+  margin: 0.4rem auto 1rem;
+}
+
+.glimmer-delete-button {
+  margin-top: 0.45rem;
+  padding: 0.35rem 0.7rem;
+  font-size: 0.78rem;
+}
+
+.glimmer-action-row {
+  margin-top: 1rem;
+  justify-content: flex-end;
+}
+
+.gallery-item img.is-loading,
+.upload-preview img.is-loading {
+  opacity: 0.45;
+}
+
+.gallery-item img.is-error,
+.upload-preview img.is-error {
+  cursor: pointer;
+  filter: grayscale(0.8);
+}
+
 .gallery-item {
   border: 1px solid rgba(136, 190, 255, 0.16);
   border-radius: 8px;
