@@ -17,7 +17,8 @@
 - `supabase db query --linked --file supabase/tests/backend_test.sql`: pgTAP reached
   `ok 19`, including 23:59:59/24:00:00 delete boundaries, and returned no failure
   diagnostics; the test transaction rolled back.
-- `npm test`: 8/8 StoragePort and repository contract tests passed.
+- `npm test`: 9/9 StoragePort and repository contract tests passed, including
+  offline/session-expiry normalization without raw SDK error leakage.
 - Real Auth concurrency smoke: three simultaneous signups produced two successful
   users and one rejection; cleanup restored zero users and two open slots.
 - Random-PNG Storage smoke: two users signed in, uploaded two private images, each
