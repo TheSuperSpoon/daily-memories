@@ -1,0 +1,9 @@
+supabase.txt
+.env
+.env.*
+!.env.example
+node_modules/
+.supabase/
+supabase/.temp/
+coverage/
+*.log

@@ -1,0 +1,1 @@
+-- Application seed data is created idempotently by the backend migration.
