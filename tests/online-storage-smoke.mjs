@@ -38,13 +38,14 @@ async function rpc(session, name, body) {
 }
 
 const candidates = Array.from({ length: 3 }, (_, i) => `${localPart}+codex-${runId}-${i + 1}@${domain}`);
-const sessions = (await Promise.all(candidates.map(async (email) => {
+const loginAttempts = await Promise.all(candidates.map(async (email) => {
   try {
     const session = await jsonFetch('/auth/v1/token?grant_type=password', { method: 'POST', headers, body: JSON.stringify({ email, password }) });
-    return { email, ...session };
-  } catch { return null; }
-}))).filter(Boolean);
-assert.equal(sessions.length, 2, 'exactly two test users must be able to sign in');
+    return { ok: true, email, session };
+  } catch (error) { return { ok: false, email, error: error.message }; }
+}));
+const sessions = loginAttempts.filter(({ ok }) => ok).map(({ email, session }) => ({ email, ...session }));
+assert.equal(sessions.length, 2, `exactly two test users must sign in: ${JSON.stringify(loginAttempts.filter(({ ok }) => !ok).map(({ error }) => error))}`);
 
 const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 const spaceId = '00000000-0000-0000-0000-000000000001';
