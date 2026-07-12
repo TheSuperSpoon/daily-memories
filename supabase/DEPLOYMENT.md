@@ -22,6 +22,9 @@
 - Random-PNG Storage smoke: two users signed in, uploaded two private images, each
   read both objects, cross-owner removal did not delete the object, and both owners
   deleted successfully. Cleanup verified zero users and zero objects.
+- Concurrency smoke: two uploads ran in parallel; ten simultaneous reward grants
+  produced one `+1`; ten simultaneous retro completions produced one `-1`; four
+  duplicate delete completions were idempotent. Cleanup verified zero reward rows.
 - Read-only smoke query: 11 migrations, two open registration slots, zero users,
   private bucket correct, seven public policies and three Storage object policies.
 - Permission audit: all seven public tables have RLS, anonymous users can execute
