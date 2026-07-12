@@ -1,5 +1,7 @@
 # For Mel birthday website
 
+> Temporary test override: `config.js` sets `testGlimmerStart` to `2026-07-12`. Remove that property before production launch to restore the default `2026-07-20` start date.
+
 Open `index.html` in a browser. The site now has a dark panoramic homepage inspired by premium crypto/product websites, plus a separate Mel Planet page.
 
 Default password: `mel720`

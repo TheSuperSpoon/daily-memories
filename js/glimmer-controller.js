@@ -4,7 +4,7 @@ import { canDeleteAt, indexMonth, LatestRequest, monthKey, monthRange } from "./
 export { monthKey, monthRange } from "./glimmer-model.js";
 
 const $ = (selector) => document.querySelector(selector);
-const CONFIG = { glimmerStart: "2026-07-20" };
+const CONFIG = { glimmerStart: appConfig.testGlimmerStart ?? "2026-07-20" };
 const monthCache = new Map();
 const monthRequests = new Map();
 const urlCache = new Map();
@@ -290,7 +290,7 @@ function renderCalendar() {
   setText(elements.progress, `${completed}/${eligible}`);
   setText(elements.calendarHint, retroMode
     ? "补签模式：选择一个过去缺失的日期。"
-    : "7/20 起，每天按 Asia/Shanghai 时间解锁一个格子。");
+    : `${CONFIG.glimmerStart.slice(5).replace("-", "/")} 起，每天按 Asia/Shanghai 时间解锁一个格子。`);
   elements.calendarGrid.replaceChildren();
 
   for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber += 1) {

@@ -24,6 +24,7 @@ def main():
 
             page.goto(f"{BASE_URL}/index.html", wait_until="networkidle")
             page.locator("#gate").wait_for(state="visible")
+            assert page.evaluate("window.__APP_CONFIG__.testGlimmerStart") == "2026-07-12"
             assert page.locator("#site").is_hidden()
             assert page.locator("#authSubmitButton").text_content() == "Sign in"
 
