@@ -78,7 +78,12 @@ const чужой = glimmers[1];
 const forbidden = await fetch(`${url}/storage/v1/object/${чужой.asset.bucket}`, { method: 'DELETE',
   headers: { ...headers, Authorization: `Bearer ${sessions[0].access_token}` },
   body: JSON.stringify({ prefixes: [чужой.asset.object_key] }) });
-assert.ok(forbidden.status === 400 || forbidden.status === 403, `cross-owner delete unexpectedly returned ${forbidden.status}`);
+assert.ok(forbidden.ok || forbidden.status === 400 || forbidden.status === 403);
+const чужойKey = чужой.asset.object_key.split('/').map(encodeURIComponent).join('/');
+const stillReadable = await fetch(`${url}/storage/v1/object/authenticated/${чужой.asset.bucket}/${чужойKey}`, {
+  headers: { apikey: key, Authorization: `Bearer ${чужой.session.access_token}` }
+});
+assert.equal(stillReadable.status, 200, 'cross-owner remove must not delete the object');
 
 for (const item of glimmers) {
   const removed = await fetch(`${url}/storage/v1/object/${item.asset.bucket}`, { method: 'DELETE',
