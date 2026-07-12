@@ -2,6 +2,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:vendor": "esbuild js/vendor-entry.js --bundle --format=esm --platform=browser --target=es2020 --minify --outfile=js/vendor/supabase.js",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
     "db:reset": "supabase db reset",
@@ -9,6 +10,10 @@
     "test": "node --test tests/*.test.js"
   },
   "devDependencies": {
+    "esbuild": "^0.28.1",
     "supabase": "^2.109.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.110.2"
   }
 }
