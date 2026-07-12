@@ -12,7 +12,7 @@ export class SupabaseStorageAdapter extends StoragePort {
       upsert: false,
       ...options.uploadOptions
     });
-    if (error) throw new StorageError('UPLOAD_REJECTED', 'Unable to upload image.', { cause: error });
+    if (error) throw new StorageError('UPLOAD_REJECTED', 'Unable to upload image.');
     return { ok: true };
   }
 
@@ -22,7 +22,7 @@ export class SupabaseStorageAdapter extends StoragePort {
     const filename = slash < 0 ? asset.object_key : asset.object_key.slice(slash + 1);
     const { data, error } = await this.supabase.storage.from(asset.bucket)
       .list(folder, { search: filename, limit: 10 });
-    if (error) throw new StorageError('READ_FORBIDDEN', 'Unable to inspect image.', { cause: error });
+    if (error) throw new StorageError('READ_FORBIDDEN', 'Unable to inspect image.');
     return data.some((item) => item.name === filename);
   }
 
@@ -32,14 +32,14 @@ export class SupabaseStorageAdapter extends StoragePort {
       .createSignedUrl(asset.object_key, expiresIn);
     if (error || !data?.signedUrl) {
       throw new StorageError(error?.statusCode === '404' ? 'OBJECT_NOT_FOUND' : 'READ_FORBIDDEN',
-        'Unable to read image.', { cause: error });
+        'Unable to read image.');
     }
     return { url: data.signedUrl, expiresAt: Date.now() + expiresIn * 1000 };
   }
 
   async remove(asset) {
     const { error } = await this.supabase.storage.from(asset.bucket).remove([asset.object_key]);
-    if (error) throw new StorageError('DELETE_FORBIDDEN', 'Unable to delete image.', { cause: error });
+    if (error) throw new StorageError('DELETE_FORBIDDEN', 'Unable to delete image.');
     return { ok: true };
   }
 }

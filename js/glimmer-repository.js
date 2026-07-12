@@ -112,8 +112,14 @@ export class GlimmerRepository {
 
   #error(error, details = {}) {
     const message = error?.message || 'Request failed.';
+    if (/jwt.*expired|session.*expired|refresh token/i.test(message)) {
+      return Object.assign(new Error('Your session has expired. Sign in again.'), { code: 'SESSION_EXPIRED', ...details });
+    }
+    if (/failed to fetch|network|fetch failed|offline/i.test(message)) {
+      return Object.assign(new Error('Network unavailable. Try again.'), { code: 'NETWORK_ERROR', ...details });
+    }
     const knownCode = ['REGISTRATION_LIMIT_REACHED', 'DAILY_GLIMMER_EXISTS', 'DELETE_WINDOW_EXPIRED',
       'INSUFFICIENT_REWARD_BALANCE'].find((code) => message.includes(code));
-    return Object.assign(new Error(message, { cause: error }), { code: knownCode ?? 'BACKEND_ERROR', ...details });
+    return Object.assign(new Error(message), { code: knownCode ?? 'BACKEND_ERROR', ...details });
   }
 }

@@ -54,3 +54,12 @@ test('upload failure cancels pending metadata', async () => {
     (error) => error.code === 'UPLOAD_REJECTED');
   assert.deepEqual(calls, ['begin_glimmer_upload', 'cancel_glimmer_upload']);
 });
+
+test('session expiry and network failures use stable codes without SDK leakage', async () => {
+  const expired = harness({ begin_glimmer_upload: { data: null, error: { message: 'JWT expired', sdk: 'private' } } });
+  await assert.rejects(expired.repository.uploadGlimmer({ file: { type: 'image/png', size: 2 } }),
+    (error) => error.code === 'SESSION_EXPIRED' && error.cause === undefined && !('sdk' in error));
+  const offline = harness({ begin_glimmer_upload: { data: null, error: { message: 'Failed to fetch', sdk: 'private' } } });
+  await assert.rejects(offline.repository.uploadGlimmer({ file: { type: 'image/png', size: 2 } }),
+    (error) => error.code === 'NETWORK_ERROR' && error.cause === undefined && !('sdk' in error));
+});
