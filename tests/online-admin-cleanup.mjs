@@ -3,7 +3,11 @@ import assert from 'node:assert/strict';
 const url = process.env.SUPABASE_URL;
 const secret = process.env.SUPABASE_SECRET_KEY;
 const keys = JSON.parse(process.env.OBJECT_KEYS ?? '[]');
-assert.ok(url && secret && keys.length, 'missing orphan cleanup environment');
+assert.ok(url && secret, 'missing orphan cleanup environment');
+if (!keys.length) {
+  console.log(JSON.stringify({ passed: true, removedObjects: 0 }));
+  process.exit(0);
+}
 const response = await fetch(`${url}/storage/v1/object/glimmers`, {
   method: 'DELETE',
   headers: { apikey: secret, Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },

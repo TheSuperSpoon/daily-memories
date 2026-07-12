@@ -49,8 +49,7 @@ assert.equal(sessions.length, 2, `exactly two test users must sign in: ${JSON.st
 
 const date = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
 const spaceId = '00000000-0000-0000-0000-000000000001';
-const glimmers = [];
-for (const [index, session] of sessions.entries()) {
+const glimmers = await Promise.all(sessions.map(async (session, index) => {
   const png = randomPng();
   const begin = await rpc(session, 'begin_glimmer_upload', { p_space_id: spaceId, p_date: date,
     p_content_type: 'image/png', p_size_bytes: png.length, p_note: `random smoke ${runId}-${index + 1}` });
@@ -59,8 +58,23 @@ for (const [index, session] of sessions.entries()) {
     headers: { apikey: key, Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'image/png', 'x-upsert': 'false' }, body: png });
   if (!upload.ok) throw new Error(`owner upload failed: ${upload.status} ${await upload.text()}`);
   await rpc(session, 'finalize_glimmer_upload', { p_id: begin.id });
-  glimmers.push({ id: begin.id, asset, session });
-}
+  return { id: begin.id, asset, session };
+}));
+
+const rewardResults = await Promise.all(Array.from({ length: 10 }, (_, index) =>
+  rpc(sessions[index % 2], 'grant_streak_rewards', { p_space_id: spaceId })));
+assert.equal(rewardResults.reduce((sum, result) => sum + Number(result.awarded), 0), 1,
+  'concurrent reward grants must award exactly once');
+assert.ok(rewardResults.every((result) => Number(result.balance) === 1));
+
+const retroDateValue = new Date(`${date}T12:00:00+08:00`);
+retroDateValue.setUTCDate(retroDateValue.getUTCDate() - 20);
+const retroDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Shanghai', year: 'numeric', month: '2-digit', day: '2-digit' }).format(retroDateValue);
+const retroResults = await Promise.all(Array.from({ length: 10 }, (_, index) =>
+  rpc(sessions[index % 2], 'complete_retro_glimmer', { p_space_id: spaceId, p_target_date: retroDate })));
+assert.equal(retroResults.filter((result) => result.spent === true).length, 1,
+  'concurrent retro completion must spend exactly once');
+assert.ok(retroResults.every((result) => Number(result.balance) === 0));
 
 for (const session of sessions) {
   const listed = await rpc(session, 'list_glimmers', { p_space_id: spaceId, p_from: date, p_to: date, p_limit: 50 });
@@ -90,7 +104,12 @@ for (const item of glimmers) {
     headers: { ...headers, Authorization: `Bearer ${item.session.access_token}` },
     body: JSON.stringify({ prefixes: [item.asset.object_key] }) });
   assert.ok(removed.ok, `owner delete failed: ${removed.status}`);
-  await rpc(item.session, 'complete_glimmer_delete', { p_id: item.id });
+  const duplicateDeletes = await Promise.all([
+    rpc(item.session, 'complete_glimmer_delete', { p_id: item.id }),
+    rpc(item.session, 'complete_glimmer_delete', { p_id: item.id })
+  ]);
+  assert.ok(duplicateDeletes.every((result) => result.deleted === true));
 }
 console.log(JSON.stringify({ passed: true, signedIn: 2, uploaded: 2, peerReads: 4,
-  forbiddenDeletes: 1, ownerDeletes: 2 }));
+  forbiddenDeletes: 1, ownerDeletes: 2, concurrentRewardCalls: 10,
+  concurrentRetroCalls: 10, duplicateDeleteCalls: 4 }));
