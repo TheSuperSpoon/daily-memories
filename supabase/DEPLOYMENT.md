@@ -5,7 +5,7 @@
 - Project ref: `wwjltwdxhwjsoyhiuwcl`
 - API origin: `https://wwjltwdxhwjsoyhiuwcl.supabase.co`
 - Storage bucket: private `glimmers`, 10 MiB, JPEG/PNG/WebP/GIF
-- Auth: email signup and confirmation enabled; Before User Created hook points to
+- Auth: email/password signup enabled without signup confirmation; Before User Created hook points to
   `public.before_user_created`
 - Local/remote migration history matched through `202607120011` on 2026-07-12.
 
@@ -50,8 +50,9 @@ npm test
 
 ## Remaining external smoke checks
 
-Configure custom SMTP and replace localhost Site URL and redirect URLs when the
-frontend production origin is known. A final browser UI smoke belongs to frontend
-integration and is intentionally outside this backend-only handoff.
+Replace localhost Site URL and add the exact password-recovery redirect URL when the
+frontend production origin is known. Password recovery uses Supabase's default email
+service; its low hourly rate is accepted for this two-user application. A final
+browser UI smoke belongs to frontend integration.
 
 No service-role or secret API key is required by the browser workflow.

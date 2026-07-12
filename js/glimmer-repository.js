@@ -122,4 +122,10 @@ export class GlimmerRepository {
       'INSUFFICIENT_REWARD_BALANCE'].find((code) => message.includes(code));
     return Object.assign(new Error(message), { code: knownCode ?? 'BACKEND_ERROR', ...details });
   }
+
+  async updatePassword(password) {
+    const { data, error } = await this.supabase.auth.updateUser({ password });
+    if (error) throw this.#error(error);
+    return data;
+  }
 }

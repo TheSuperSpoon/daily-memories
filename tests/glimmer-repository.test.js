@@ -63,3 +63,16 @@ test('session expiry and network failures use stable codes without SDK leakage',
   await assert.rejects(offline.repository.uploadGlimmer({ file: { type: 'image/png', size: 2 } }),
     (error) => error.code === 'NETWORK_ERROR' && error.cause === undefined && !('sdk' in error));
 });
+
+test('password recovery updates the authenticated recovery user', async () => {
+  const calls = [];
+  const repository = new GlimmerRepository({
+    supabase: { auth: { updateUser: async (attributes) => {
+      calls.push(attributes); return { data: { user: { id: 'u1' } }, error: null };
+    } } },
+    storageFactory: {}
+  });
+  const result = await repository.updatePassword('new secure password');
+  assert.equal(result.user.id, 'u1');
+  assert.deepEqual(calls, [{ password: 'new secure password' }]);
+});
