@@ -3415,9 +3415,3 @@ body.prelude-complete .completed-only {
     gap: 5px;
   }
 }
-/* Auth boundary for the private backend. */
-.auth-panel { position: fixed; z-index: 10000; top: 1rem; right: 1rem; max-width: min(26rem, calc(100vw - 2rem)); }
-.auth-card { display: grid; gap: .6rem; padding: 1rem; border: 1px solid rgba(190,160,255,.45); border-radius: 1rem; background: rgba(12,8,28,.94); color: white; }
-.auth-card input { padding: .65rem; border-radius: .5rem; border: 1px solid rgba(255,255,255,.25); background: rgba(255,255,255,.08); color: white; }
-.auth-actions { display: flex; flex-wrap: wrap; gap: .5rem; }
-.backend-locked #glimmer { pointer-events: none; opacity: .45; }

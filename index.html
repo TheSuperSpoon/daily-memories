@@ -7,24 +7,6 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <section id="authPanel" class="auth-panel" aria-label="Account access">
-      <form id="authForm" class="auth-card">
-        <h2>Private account</h2>
-        <input id="authEmail" type="email" autocomplete="email" placeholder="Email" required />
-        <input id="authDisplayName" type="text" maxlength="30" placeholder="Display name (sign up)" />
-        <input id="authPassword" type="password" minlength="8" autocomplete="current-password" placeholder="Password" required />
-        <div class="auth-actions">
-          <button type="submit" value="signin">Sign in</button>
-          <button id="signUpButton" type="button">Sign up</button>
-          <button id="resetPasswordButton" type="button">Forgot password</button>
-        </div>
-        <p id="authMessage" role="status"></p>
-      </form>
-      <div id="sessionCard" class="auth-card hidden">
-        <span id="sessionEmail"></span>
-        <button id="signOutButton" type="button">Sign out</button>
-      </div>
-    </section>
     <canvas id="sky" aria-hidden="true"></canvas>
 
     <main id="app">
@@ -514,8 +496,6 @@
       </section>
     </main>
 
-    <script src="./config.js"></script>
-    <script type="module" src="./js/app-backend.js"></script>
     <script src="./script.js"></script>
   </body>
 </html>
