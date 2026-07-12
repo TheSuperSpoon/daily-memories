@@ -76,3 +76,10 @@ test('password recovery updates the authenticated recovery user', async () => {
   assert.equal(result.user.id, 'u1');
   assert.deepEqual(calls, [{ password: 'new secure password' }]);
 });
+
+test('dashboard context is read through the repository RPC', async () => {
+  const expected = { role: 'ray', local_today: '2026-07-12', reward_balance: 1 };
+  const h = harness({ get_glimmer_dashboard: { data: expected, error: null } });
+  assert.deepEqual(await h.repository.getDashboard('space-1'), expected);
+  assert.deepEqual(h.calls, [['get_glimmer_dashboard', { p_space_id: 'space-1' }]]);
+});

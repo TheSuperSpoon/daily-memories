@@ -1,6 +1,6 @@
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(19);
+select plan(23);
 
 select has_table('public','spaces','spaces exists');
 select has_table('public','glimmers','glimmers exists');
@@ -79,6 +79,14 @@ set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
 select lives_ok($$select public.grant_streak_rewards('00000000-0000-0000-0000-000000000001')$$,'first reward grant succeeds');
 select lives_ok($$select public.grant_streak_rewards('00000000-0000-0000-0000-000000000001')$$,'reward grant retry succeeds');
+select is((public.get_glimmer_dashboard('00000000-0000-0000-0000-000000000001')->>'role'),'ray',
+ 'dashboard returns authenticated member role');
+select is((public.get_glimmer_dashboard('00000000-0000-0000-0000-000000000001')->>'local_today')::date,
+ (now() at time zone 'Asia/Shanghai')::date,'dashboard uses space local date');
+select is((public.get_glimmer_dashboard('00000000-0000-0000-0000-000000000001')->>'complete_days_total')::integer,10,
+ 'dashboard counts complete accounted days without loading assets');
+select is((public.get_glimmer_dashboard('00000000-0000-0000-0000-000000000001')->>'reward_balance')::integer,1,
+ 'dashboard returns immutable ledger balance');
 reset role;
 select is((select count(*)::integer from public.reward_ledger where event_type='streak_earned'),1,
  'concurrent-safe key prevents duplicate milestone reward');

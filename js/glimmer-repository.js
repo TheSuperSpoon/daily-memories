@@ -123,6 +123,12 @@ export class GlimmerRepository {
     return Object.assign(new Error(message), { code: knownCode ?? 'BACKEND_ERROR', ...details });
   }
 
+  async getDashboard(spaceId) {
+    const { data, error } = await this.supabase.rpc('get_glimmer_dashboard', { p_space_id: spaceId });
+    if (error) throw this.#error(error);
+    return data;
+  }
+
   async updatePassword(password) {
     const { data, error } = await this.supabase.auth.updateUser({ password });
     if (error) throw this.#error(error);
