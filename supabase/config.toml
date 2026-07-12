@@ -26,6 +26,12 @@ enable_signup = true
 enable_signup = true
 double_confirm_changes = true
 enable_confirmations = true
+max_frequency = "1m"
+otp_length = 8
+
+[auth.mfa.totp]
+enroll_enabled = true
+verify_enabled = true
 
 [auth.hook.before_user_created]
 enabled = true
@@ -34,3 +40,6 @@ uri = "pg-functions://postgres/public/before_user_created"
 [storage]
 enabled = true
 file_size_limit = "10MiB"
+
+[storage.vector]
+enabled = false
