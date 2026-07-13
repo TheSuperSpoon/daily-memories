@@ -109,7 +109,7 @@ function setTicketPeek(open) {
 
 function markPreludeLit() {
   litLightCount = lightWords.length;
-  lightProgress.textContent = `${lightWords.length} / ${lightWords.length}`;
+  if (lightProgress) lightProgress.textContent = `${lightWords.length} / ${lightWords.length}`;
   lovePrelude.classList.add("is-complete", "is-revisit");
   lightWords.forEach((word) => {
     word.dataset.lit = "yes";
@@ -181,7 +181,7 @@ function resetPrelude() {
   window.clearTimeout(preludeCompleteTimer);
   window.clearInterval(homecomingInterval);
   litLightCount = 0;
-  lightProgress.textContent = `0 / ${lightWords.length}`;
+  if (lightProgress) lightProgress.textContent = `0 / ${lightWords.length}`;
   lovePrelude.classList.remove("is-complete", "is-revisit");
   homecoming.classList.add("hidden");
   homecomingCount.textContent = "3";
@@ -348,7 +348,7 @@ lightWords.forEach((word) => {
     word.classList.add("is-lit");
     word.closest(".letter-paragraph")?.classList.add("is-illuminated");
     litLightCount += 1;
-    lightProgress.textContent = `${litLightCount} / ${lightWords.length}`;
+    if (lightProgress) lightProgress.textContent = `${litLightCount} / ${lightWords.length}`;
 
     if (litLightCount === lightWords.length) {
       completePrelude();

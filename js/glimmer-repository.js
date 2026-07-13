@@ -38,11 +38,12 @@ export class GlimmerRepository {
     return this.supabase.auth.onAuthStateChange(callback).data.subscription;
   }
 
-  async uploadGlimmer({ spaceId, date, note = '', file, onProgress }) {
+  async uploadGlimmer({ spaceId, date, note = '', mood = null, file, onProgress }) {
     this.#validateFile(file);
+    this.#validateMood(mood);
     const { data: begin, error: beginError } = await this.supabase.rpc('begin_glimmer_upload', {
       p_space_id: spaceId, p_date: date, p_content_type: file.type,
-      p_size_bytes: file.size, p_note: note
+      p_size_bytes: file.size, p_note: note, p_mood: mood
     });
     if (beginError) throw this.#error(beginError);
     const adapter = this.storageFactory.forAsset(begin.asset);
@@ -107,6 +108,12 @@ export class GlimmerRepository {
     }
     if (file.size < 1 || file.size > 10 * 1024 * 1024) {
       throw Object.assign(new Error('Image must be 10 MiB or smaller.'), { code: 'INVALID_FILE_SIZE' });
+    }
+  }
+
+  #validateMood(mood) {
+    if (mood !== null && mood !== undefined && !['happy', 'neutral', 'sad', 'tired', 'loved'].includes(mood)) {
+      throw Object.assign(new Error('Choose one of the available moods.'), { code: 'INVALID_MOOD' });
     }
   }
 

@@ -24,6 +24,7 @@ const elements = {
   rayPreview: $("#rayUploadPreview"),
   melPreview: $("#melUploadPreview"),
   lanes: [...document.querySelectorAll("[data-upload-person]")],
+  moodPickers: [...document.querySelectorAll("[data-mood-person]")],
   lighthouse: $("#lighthouseScene"),
   growthTitle: $("#growthTitle"),
   growthCopy: $("#growthCopy"),
@@ -60,6 +61,7 @@ let calendarMonth = new Date(2026, 6, 1);
 let galleryMonth = new Date();
 let activeDate = CONFIG.glimmerStart;
 let selectedUploadDate = activeDate;
+let selectedUploadMood = null;
 let retroMode = false;
 let initialized = false;
 let initializing = null;
@@ -68,6 +70,15 @@ let pendingAction = null;
 let dashboardClockOffset = 0;
 let sessionGeneration = 0;
 const galleryRequests = new LatestRequest();
+const moodDrafts = new Map();
+
+const moodOptions = {
+  happy: "😊",
+  neutral: "😐",
+  sad: "😢",
+  tired: "😴",
+  loved: "🥰",
+};
 
 const imageObserver = typeof IntersectionObserver === "function"
   ? new IntersectionObserver((entries) => {
@@ -192,6 +203,14 @@ function isUploadableDate(key, day) {
   return retroMode && key < dashboard.local_today && dashboard.reward_balance > 0 && !day?.[dashboard.role];
 }
 
+function moodDraftKey(date, role) {
+  return `${date}:${role}`;
+}
+
+function moodFor(date, role, glimmer) {
+  return moodDrafts.get(moodDraftKey(date, role)) ?? glimmer?.mood ?? null;
+}
+
 function dayNumberFromStart(key) {
   return Math.max(1, Math.floor((parseDate(key) - parseDate(CONFIG.glimmerStart)) / 86400000) + 1);
 }
@@ -227,9 +246,28 @@ function renderUploadPreview(container, glimmer, emptyText) {
   }
   container.appendChild(createLazyImage(glimmer, emptyText, true));
   const note = document.createElement("small");
-  note.textContent = glimmer.note || "今天的微光";
+  const moodPrefix = glimmer.mood && moodOptions[glimmer.mood] ? `${moodOptions[glimmer.mood]} ` : "";
+  note.textContent = `${moodPrefix}${glimmer.note || "今天的微光"}`;
   container.appendChild(note);
   appendDeleteButton(container, glimmer);
+}
+
+function renderMoodPickers(day) {
+  elements.moodPickers.forEach((picker) => {
+    const role = picker.dataset.moodPerson;
+    const glimmer = day[role];
+    const ownRole = role === dashboard?.role;
+    const replaceable = ownRole && glimmer && canDelete(glimmer) && activeDate === dashboard.local_today;
+    const selectable = ownRole && (replaceable || isUploadableDate(activeDate, day));
+    const selectedMood = moodFor(activeDate, role, glimmer);
+    picker.classList.toggle("is-disabled", !selectable);
+    picker.querySelectorAll("[data-mood]").forEach((button) => {
+      const active = selectedMood === button.dataset.mood;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-pressed", active ? "true" : "false");
+      button.disabled = !selectable;
+    });
+  });
 }
 
 function renderDailyBoard() {
@@ -246,6 +284,7 @@ function renderDailyBoard() {
       : "每人一张截图或照片。两栏都放好以后，这一天会变成完整的紫色微光。");
   renderUploadPreview(elements.rayPreview, day.ray, "Ray 的截图 / 照片");
   renderUploadPreview(elements.melPreview, day.mel, "Mel 的截图 / 照片");
+  renderMoodPickers(day);
 
   elements.lanes.forEach((button) => {
     const role = button.dataset.uploadPerson;
@@ -263,9 +302,9 @@ function renderDailyBoard() {
       if (replaceable) {
         confirmAction("Replace this glimmer?", "The current image will be deleted before the new upload begins.", async () => {
           await deleteGlimmer(existing, false);
-          openUploadModal(activeDate);
+          openUploadModal(activeDate, role);
         });
-      } else if (isUploadableDate(activeDate, day)) openUploadModal(activeDate);
+      } else if (isUploadableDate(activeDate, day)) openUploadModal(activeDate, role);
     };
   });
 }
@@ -373,8 +412,10 @@ export function renderGlimmer() {
   renderStars();
 }
 
-function openUploadModal(key) {
+function openUploadModal(key, role = dashboard?.role) {
   selectedUploadDate = key;
+  const day = currentMonthData(monthFromDateKey(key)).days[key] ?? {};
+  selectedUploadMood = moodFor(key, role, day[role]);
   elements.uploadForm.reset();
   setText(elements.uploadDate, key);
   setText(elements.uploadStatus, "");
@@ -431,6 +472,7 @@ async function handleUpload(event) {
       spaceId: appConfig.spaceId,
       date: selectedUploadDate,
       note: elements.photoNote.value.trim(),
+      mood: selectedUploadMood,
       file,
       onProgress: ({ phase }) => setText(elements.uploadStatus, phase === "uploading" ? "Uploading private image..." : "Confirming upload..."),
     });
@@ -601,6 +643,8 @@ export function resetGlimmerSession() {
   pendingFinalizeId = null;
   pendingAction = null;
   dashboardClockOffset = 0;
+  selectedUploadMood = null;
+  moodDrafts.clear();
   galleryRequests.invalidate();
   monthCache.clear();
   monthRequests.clear();
@@ -618,6 +662,18 @@ elements.galleryNext?.addEventListener("click", () => setGalleryMonth(1));
 elements.galleryRetry?.addEventListener("click", () => renderGallery(true));
 elements.uploadForm?.addEventListener("submit", handleUpload);
 elements.retryFinalize?.addEventListener("click", retryFinalize);
+elements.moodPickers.forEach((picker) => {
+  picker.querySelectorAll("[data-mood]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (button.disabled) return;
+      const role = picker.dataset.moodPerson;
+      const key = moodDraftKey(activeDate, role);
+      const current = moodDrafts.get(key) ?? currentMonthData(monthFromDateKey(activeDate)).days[activeDate]?.[role]?.mood ?? null;
+      moodDrafts.set(key, current === button.dataset.mood ? null : button.dataset.mood);
+      renderDailyBoard();
+    });
+  });
+});
 elements.actionConfirm?.addEventListener("click", runConfirmedAction);
 elements.backpackButton?.addEventListener("click", () => elements.backpackModal.classList.remove("hidden"));
 elements.useRetroCard?.addEventListener("click", () => {

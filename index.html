@@ -44,10 +44,6 @@
             <header class="prelude-header">
               <p class="prelude-kicker">A letter before everything else</p>
               <h1 id="preludeTitle">喧嚣之外，我们是彼此的灯塔</h1>
-              <div class="prelude-progress" aria-live="polite">
-                <span id="lightProgress">0 / 5</span>
-                <span>束光已亮起</span>
-              </div>
             </header>
 
             <div class="prelude-copy">
@@ -187,7 +183,7 @@
             </div>
             <footer class="home-love-footer">
               <span>Made with love for Mel</span>
-              <button id="returnLetterButton" class="completed-only" type="button">回到 5.19 邀请信</button>
+              <button id="returnLetterButton" class="completed-only" type="button">回到生日信件</button>
             </footer>
           </section>
         </section>
@@ -245,6 +241,16 @@
                     <div id="rayUploadPreview" class="upload-preview">
                       <span>截图 / 照片</span>
                     </div>
+                    <div class="mood-picker" data-mood-person="ray" aria-label="Ray mood picker">
+                      <p>今日心情 · How are you feeling today?</p>
+                      <div class="mood-options" role="group" aria-label="Ray mood options">
+                        <button type="button" data-mood="happy" aria-label="Happy">😊</button>
+                        <button type="button" data-mood="neutral" aria-label="Neutral">😐</button>
+                        <button type="button" data-mood="sad" aria-label="Sad">😢</button>
+                        <button type="button" data-mood="tired" aria-label="Tired">😴</button>
+                        <button type="button" data-mood="loved" aria-label="Loved">🥰</button>
+                      </div>
+                    </div>
                     <button type="button" data-upload-person="ray">上传 Ray 的微光</button>
                   </article>
                   <article class="upload-lane mel-lane">
@@ -254,6 +260,16 @@
                     </div>
                     <div id="melUploadPreview" class="upload-preview">
                       <span>截图 / 照片</span>
+                    </div>
+                    <div class="mood-picker" data-mood-person="mel" aria-label="Mel mood picker">
+                      <p>今日心情 · How are you feeling today?</p>
+                      <div class="mood-options" role="group" aria-label="Mel mood options">
+                        <button type="button" data-mood="happy" aria-label="Happy">😊</button>
+                        <button type="button" data-mood="neutral" aria-label="Neutral">😐</button>
+                        <button type="button" data-mood="sad" aria-label="Sad">😢</button>
+                        <button type="button" data-mood="tired" aria-label="Tired">😴</button>
+                        <button type="button" data-mood="loved" aria-label="Loved">🥰</button>
+                      </div>
                     </div>
                     <button type="button" data-upload-person="mel">上传 Mel 的微光</button>
                   </article>
