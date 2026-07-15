@@ -229,7 +229,7 @@ spaces/{space_id}/users/{user_id}/{yyyy}/{mm}/{glimmer_id}.{ext}
 
 建议封装三个数据库函数，并撤销 `anon` 的执行权限：
 
-1. `begin_glimmer_upload(p_space_id, p_date, p_content_type, p_size_bytes, p_note)`：校验成员、推导角色、校验日期和唯一性，从 `spaces.default_storage_provider` 选择后端，创建 pending glimmer 与 asset，返回统一 asset DTO；客户端不能指定 provider。
+1. `begin_glimmer_upload(p_space_id, p_date, p_content_type, p_size_bytes, p_note, p_mood)`：校验成员、推导角色、校验日期、心情值域和唯一性，从 `spaces.default_storage_provider` 选择后端，创建 pending glimmer 与 asset，返回统一 asset DTO；`p_mood` 可为 `happy | neutral | sad | tired | loved | null`，客户端不能指定 provider。
 2. `finalize_glimmer_upload(p_id, p_asset_id)`：只允许 owner 完成自己的 pending 记录，并按 asset provider 校验对象后转为 `ready`。
 3. `soft_delete_glimmer(p_id)`：只允许 owner 且 `created_at > now() - interval '24 hours'`，设置 `deleted_at`。
 
@@ -363,7 +363,7 @@ Worker 通过 `ObjectStorePort.head(asset)` 确认对象存在、大小/MIME 与
 - `from/to` 为闭区间业务日期；最大跨度建议 366 天。
 - `ownerId` 可选，必须属于同一空间。
 - `limit` 默认 50、最大 100；使用 `(glimmer_date, created_at, id)` 游标，不使用大 offset。
-- 返回元数据、当前统一 asset DTO 和 `nextCursor`。默认不附 GET URL；需要显示的 asset id 再批量签名。
+- 返回含 `mood` 的元数据、当前统一 asset DTO 和 `nextCursor`。默认不附 GET URL；需要显示的 asset id 再批量签名。
 
 ### `POST /api/glimmers/read-urls`
 

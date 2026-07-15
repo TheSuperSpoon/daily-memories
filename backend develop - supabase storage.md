@@ -258,9 +258,9 @@ export class StoragePort {
 
 `storage-adapter-factory.js` 按 `asset.provider` 返回适配器。第一版只注册 `supabase`；未知 provider 必须显式失败。业务 repository 负责 begin/finalize 状态机，适配器只负责对象操作，不判断“每天一张”、角色、连续天数或 24 小时规则。
 
-### 7.2 `begin_glimmer_upload(space_id, date, content_type, size_bytes, note)`
+### 7.2 `begin_glimmer_upload(space_id, date, content_type, size_bytes, note, mood)`
 
-校验当前用户、空间成员关系、当天/日期规则、MIME、大小、note 和每日唯一性。数据库推导 role，从 `spaces.default_storage_provider` 选择后端，创建 pending glimmer 与 asset，并生成 object key；客户端不能指定 provider。第一版默认返回 Supabase asset：
+校验当前用户、空间成员关系、当天/日期规则、MIME、大小、note、mood 和每日唯一性。`mood` 可为 `happy | neutral | sad | tired | loved | null`。数据库推导 role，从 `spaces.default_storage_provider` 选择后端，创建 pending glimmer 与 asset，并生成 object key；客户端不能指定 provider。第一版默认返回 Supabase asset：
 
 ```json
 {
@@ -293,6 +293,7 @@ await supabase.storage
 
 - 日期为闭区间，最大跨度 366 天。
 - `limit` 默认 50、最大 100。
+- 每条 glimmer DTO 包含可空的 `mood` 字段。
 - 使用 `(glimmer_date, created_at, id)` 游标分页。
 - 只返回 ready 且未删除记录。
 - RLS 保证只能查看同一 space。
