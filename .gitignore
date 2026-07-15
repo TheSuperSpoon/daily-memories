@@ -5,6 +5,7 @@ supabase.txt
 node_modules/
 .supabase/
 supabase/.temp/
+supabase/.branches/
 coverage/
 *.log
 daily-memories/
