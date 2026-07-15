@@ -1,5 +1,5 @@
 import { appConfig, repository } from "./app-services.js";
-import { canDeleteAt, indexMonth, LatestRequest, monthKey, monthRange } from "./glimmer-model.js";
+import { canDeleteAt, indexMonth, LatestRequest, moodDraftValue, monthKey, monthRange } from "./glimmer-model.js";
 
 export { monthKey, monthRange } from "./glimmer-model.js";
 
@@ -208,7 +208,7 @@ function moodDraftKey(date, role) {
 }
 
 function moodFor(date, role, glimmer) {
-  return moodDrafts.get(moodDraftKey(date, role)) ?? glimmer?.mood ?? null;
+  return moodDraftValue(moodDrafts, moodDraftKey(date, role), glimmer?.mood);
 }
 
 function dayNumberFromStart(key) {
@@ -300,7 +300,9 @@ function renderDailyBoard() {
         : "等待解锁";
     button.onclick = () => {
       if (replaceable) {
-        confirmAction("Replace this glimmer?", "The current image will be deleted before the new upload begins.", async () => {
+        confirmAction("Replace this glimmer?", "The current image and saved mood will be deleted before the new upload begins.", async () => {
+          const key = moodDraftKey(activeDate, role);
+          if (!moodDrafts.has(key)) moodDrafts.set(key, null);
           await deleteGlimmer(existing, false);
           openUploadModal(activeDate, role);
         });
@@ -668,7 +670,8 @@ elements.moodPickers.forEach((picker) => {
       if (button.disabled) return;
       const role = picker.dataset.moodPerson;
       const key = moodDraftKey(activeDate, role);
-      const current = moodDrafts.get(key) ?? currentMonthData(monthFromDateKey(activeDate)).days[activeDate]?.[role]?.mood ?? null;
+      const savedMood = currentMonthData(monthFromDateKey(activeDate)).days[activeDate]?.[role]?.mood;
+      const current = moodDraftValue(moodDrafts, key, savedMood);
       moodDrafts.set(key, current === button.dataset.mood ? null : button.dataset.mood);
       renderDailyBoard();
     });

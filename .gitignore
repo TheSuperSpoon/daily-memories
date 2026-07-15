@@ -8,3 +8,4 @@ supabase/.temp/
 coverage/
 *.log
 daily-memories/
+.DS_Store

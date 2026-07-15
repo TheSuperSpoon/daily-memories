@@ -20,6 +20,10 @@ export function indexMonth(items) {
   return { items, days };
 }
 
+export function moodDraftValue(drafts, key, savedMood = null) {
+  return drafts.has(key) ? drafts.get(key) : (savedMood ?? null);
+}
+
 export function canDeleteAt(glimmer, dashboard, serverNowMs) {
   return Boolean(dashboard && glimmer.owner_id === dashboard.user_id
     && new Date(glimmer.created_at).getTime() > serverNowMs - 86400000);

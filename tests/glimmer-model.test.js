@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { canDeleteAt, indexMonth, LatestRequest, monthKey, monthRange } from "../js/glimmer-model.js";
+import { canDeleteAt, indexMonth, LatestRequest, moodDraftValue, monthKey, monthRange } from "../js/glimmer-model.js";
 
 test("natural month ranges include leap days and stable cache keys", () => {
   const february = new Date(2028, 1, 12);
@@ -14,6 +14,13 @@ test("month records are indexed by date and backend role", () => {
   const indexed = indexMonth([ray, mel]);
   assert.equal(indexed.days["2026-07-20"].ray, ray);
   assert.equal(indexed.days["2026-07-20"].mel, mel);
+});
+
+test("an explicit null mood draft overrides a saved mood", () => {
+  const drafts = new Map();
+  assert.equal(moodDraftValue(drafts, "2026-07-20:ray", "happy"), "happy");
+  drafts.set("2026-07-20:ray", null);
+  assert.equal(moodDraftValue(drafts, "2026-07-20:ray", "happy"), null);
 });
 
 test("stale requests cannot be treated as current", () => {
