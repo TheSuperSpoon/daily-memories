@@ -7,9 +7,18 @@
 - Storage bucket: private `glimmers`, 10 MiB, JPEG/PNG/WebP/GIF
 - Auth: email/password signup enabled without signup confirmation; Before User Created hook points to
   `public.before_user_created`
-- Local/remote migration history matched through `202607120011` on 2026-07-12.
+- Local/remote migration history matched through `202607130001` on 2026-07-16.
 
 ## Verification
+
+- `202607130001_add_glimmer_mood.sql` deployed successfully on 2026-07-16 after a
+  dry run confirmed it was the only pending migration.
+- Cloud schema verification confirmed `glimmers.mood`, `glimmers_mood_check`, the
+  six-argument `begin_glimmer_upload` signature, authenticated execute permission,
+  and no anonymous execute permission.
+- A cloud transaction smoke created a temporary space, began a glimmer with
+  `mood='loved'`, marked it ready, and verified `list_glimmers` returned `loved`;
+  the transaction was rolled back and retained no smoke data.
 
 - `supabase db push --dry-run`: all pending migrations detected before deployment.
 - `supabase db push --linked`: migrations 001-011 applied successfully.

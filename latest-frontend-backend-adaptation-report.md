@@ -1,6 +1,6 @@
 # 最近提交的前端功能与后端适配分析
 
-> 实施更新（2026-07-15）：本地 toggle/替换逻辑已修复，产品规则确定为“替换图片不继承旧心情”；前端单测 17/17、完整 migration 重放和 pgTAP 32/32 均通过。云端 dry-run 确认仅 `202607130001_add_glimmer_mood.sql` 待部署；正式部署仍待执行权限放行。
+> 实施更新（2026-07-16）：本地 toggle/替换逻辑已修复，产品规则确定为“替换图片不继承旧心情”；前端单测 17/17、完整 migration 重放和 pgTAP 32/32 均通过。`202607130001_add_glimmer_mood.sql` 已正式部署到云端，结构、权限及事务式上传/列表烟雾测试均通过。
 
 ## 1. 分析范围与结论
 
@@ -141,9 +141,9 @@ return moodDrafts.has(key) ? moodDrafts.get(key) : (glimmer?.mood ?? null);
 
 Repository 单测只证明浏览器会传 `p_mood` 和拦截明显非法值，不能替代上述数据库契约测试。
 
-### 4.4 P1：迁移“已提交”不等于“已部署”
+### 4.4 已解决：迁移已部署并验证
 
-仓库只能证明迁移脚本存在，无法从本地代码判断远端 Supabase 是否已经执行。若前端先上线而迁移未执行，`begin_glimmer_upload` 会因 PostgREST 找不到带 `p_mood` 的函数签名而失败，且列表也不会返回 mood。
+`202607130001_add_glimmer_mood.sql` 已于 2026-07-16 部署。云端已确认 migration history、`glimmers.mood`、check constraint、六参数 RPC 签名和执行权限；事务式烟雾测试也证明上传后列表能返回 mood。
 
 应在目标环境验证：
 
@@ -178,10 +178,10 @@ supabase/migrations/202607130001_add_glimmer_mood.sql
 
 ### 上线前必须完成
 
-- [ ] 将 `202607130001_add_glimmer_mood.sql` 应用到开发、测试及生产目标环境，并记录各环境迁移版本。
-- [ ] 刷新/确认 PostgREST schema cache，验证命名参数 `p_mood` 可调用。
+- [x] 将 `202607130001_add_glimmer_mood.sql` 应用到当前云端项目并记录迁移版本。
+- [x] 确认 PostgREST 新 RPC 可调用，命名参数 `p_mood` 生效。
 - [x] 增加数据库测试：合法值、`null`、非法值、constraint、列表返回和权限。
-- [x] 运行完整 migration reset + pgTAP；authenticated 云端烟雾测试仍待正式部署后执行。
+- [x] 运行完整 migration reset + pgTAP，并完成 authenticated 云端事务烟雾测试。
 
 ### 建议同步完成
 
@@ -209,4 +209,5 @@ supabase/migrations/202607130001_add_glimmer_mood.sql
 - 使用临时 Node LTS 运行前端测试：17/17 通过。
 - 使用 Docker 隔离环境执行完整 `supabase db reset`：13 个 migrations 全部成功重放。
 - 本地 pgTAP：32/32 通过；测试完成后已停止本地 Supabase 容器。
-- 云端 dry-run 已确认只有 `202607130001_add_glimmer_mood.sql` 待部署。
+- 云端 dry-run 确认只有 `202607130001_add_glimmer_mood.sql` 待部署，随后正式部署成功。
+- 云端结构与权限检查通过；事务式 mood 上传/列表烟雾测试通过并已回滚测试数据。
