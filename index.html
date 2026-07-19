@@ -209,6 +209,11 @@
                   <strong id="streakCount">0</strong>
                   <small>full synergy days</small>
                 </div>
+                <button id="statsButton" class="stats-widget" type="button">
+                  <span>STATS</span>
+                  <strong>Us</strong>
+                  <small>in numbers</small>
+                </button>
                 <button id="backpackButton" class="backpack-button" type="button">背包 <span id="retroCardCount">0</span></button>
               </div>
             </header>
@@ -341,6 +346,38 @@
               <p>每连续 10 天双方都上传，会获得一张补签卡。选择补签卡后，可以点过去缺失的一天补回微光。</p>
               <button id="useRetroCard" type="button">Use Retroactive Card</button>
               <p id="retroModeHint" class="retro-hint"></p>
+            </div>
+          </div>
+
+          <div id="statsModal" class="glimmer-modal hidden" role="dialog" aria-modal="true" aria-labelledby="statsTitle">
+            <button class="modal-backdrop" type="button" data-close-modal></button>
+            <div class="upload-card stats-card">
+              <button class="modal-close" type="button" data-close-modal>×</button>
+              <p class="eyebrow">Us in numbers</p>
+              <h3 id="statsTitle">我们的数据宇宙</h3>
+              <p id="statsStatus" class="glimmer-inline-status" role="status">Calculating from your glimmers...</p>
+              <div class="stats-grid" aria-label="Relationship statistics">
+                <article>
+                  <span>Days together</span>
+                  <strong id="statsDaysTogether">0</strong>
+                  <small>since 2026.03.29</small>
+                </article>
+                <article>
+                  <span>Photos posted</span>
+                  <strong id="statsPhotoCount">0</strong>
+                  <small>shared glimmers</small>
+                </article>
+                <article>
+                  <span>Most-used word</span>
+                  <strong id="statsTopWord">-</strong>
+                  <small>from captions</small>
+                </article>
+                <article>
+                  <span>Longest streak</span>
+                  <strong id="statsLongestStreak">0</strong>
+                  <small>both uploaded</small>
+                </article>
+              </div>
             </div>
           </div>
         </section>

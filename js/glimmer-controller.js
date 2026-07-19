@@ -4,7 +4,10 @@ import { canDeleteAt, indexMonth, LatestRequest, moodDraftValue, monthKey, month
 export { monthKey, monthRange } from "./glimmer-model.js";
 
 const $ = (selector) => document.querySelector(selector);
-const CONFIG = { glimmerStart: appConfig.testGlimmerStart ?? "2026-07-20" };
+const CONFIG = {
+  glimmerStart: appConfig.testGlimmerStart ?? "2026-07-20",
+  relationshipStart: "2026-03-29",
+};
 const monthCache = new Map();
 const monthRequests = new Map();
 const urlCache = new Map();
@@ -30,6 +33,13 @@ const elements = {
   growthCopy: $("#growthCopy"),
   growthPlant: $("#growthPlant"),
   streak: $("#streakCount"),
+  statsButton: $("#statsButton"),
+  statsModal: $("#statsModal"),
+  statsStatus: $("#statsStatus"),
+  statsDaysTogether: $("#statsDaysTogether"),
+  statsPhotoCount: $("#statsPhotoCount"),
+  statsTopWord: $("#statsTopWord"),
+  statsLongestStreak: $("#statsLongestStreak"),
   cardCount: $("#retroCardCount"),
   backpackButton: $("#backpackButton"),
   backpackModal: $("#backpackModal"),
@@ -79,6 +89,12 @@ const moodOptions = {
   tired: "😴",
   loved: "🥰",
 };
+
+const captionStopWords = new Set([
+  "a", "an", "and", "are", "as", "at", "be", "but", "for", "from", "i", "in", "is", "it", "me",
+  "my", "of", "on", "or", "our", "so", "the", "this", "to", "we", "with", "you", "your",
+  "了", "的", "我", "你", "我们", "今天", "就是", "一个", "没有",
+]);
 
 const imageObserver = typeof IntersectionObserver === "function"
   ? new IntersectionObserver((entries) => {
@@ -213,6 +229,32 @@ function moodFor(date, role, glimmer) {
 
 function dayNumberFromStart(key) {
   return Math.max(1, Math.floor((parseDate(key) - parseDate(CONFIG.glimmerStart)) / 86400000) + 1);
+}
+
+function daysBetweenInclusive(fromKey, toKey) {
+  return Math.max(0, Math.floor((parseDate(toKey) - parseDate(fromKey)) / 86400000) + 1);
+}
+
+function addMonths(date, offset) {
+  return new Date(date.getFullYear(), date.getMonth() + offset, 1);
+}
+
+function monthsBetween(fromKey, toKey) {
+  const months = [];
+  if (toKey < fromKey) return months;
+  let cursor = monthFromDateKey(fromKey);
+  const end = monthFromDateKey(toKey);
+  while (cursor <= end) {
+    months.push(new Date(cursor));
+    cursor = addMonths(cursor, 1);
+  }
+  return months;
+}
+
+function captionWords(note) {
+  return (note || "")
+    .toLowerCase()
+    .match(/[\p{Script=Han}]{2,}|[a-z0-9']{2,}/gu) ?? [];
 }
 
 function setText(element, value) {
@@ -430,6 +472,62 @@ function closeModals() {
   elements.uploadModal?.classList.add("hidden");
   elements.backpackModal?.classList.add("hidden");
   elements.actionModal?.classList.add("hidden");
+  elements.statsModal?.classList.add("hidden");
+}
+
+async function collectStatsData() {
+  const today = dashboard?.local_today ?? dateKey(new Date());
+  const months = monthsBetween(CONFIG.glimmerStart, today);
+  const monthData = await Promise.all(months.map((month) => loadMonth(month)));
+  const items = monthData.flatMap((data) => data.items);
+  const completeDays = new Set();
+  monthData.forEach((data) => {
+    Object.entries(data.days).forEach(([key, day]) => {
+      if (key >= CONFIG.glimmerStart && key <= today && isCompleteDay(day)) completeDays.add(key);
+    });
+  });
+
+  let longestStreak = 0;
+  let currentStreak = 0;
+  for (let cursor = parseDate(CONFIG.glimmerStart); dateKey(cursor) <= today; cursor.setDate(cursor.getDate() + 1)) {
+    if (completeDays.has(dateKey(cursor))) {
+      currentStreak += 1;
+      longestStreak = Math.max(longestStreak, currentStreak);
+    } else {
+      currentStreak = 0;
+    }
+  }
+
+  const wordCounts = new Map();
+  items.forEach((item) => {
+    captionWords(item.note).forEach((word) => {
+      if (!captionStopWords.has(word)) wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
+    });
+  });
+  const topWord = [...wordCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? "-";
+
+  return {
+    daysTogether: daysBetweenInclusive(CONFIG.relationshipStart, today),
+    photoCount: items.length,
+    topWord,
+    longestStreak,
+  };
+}
+
+async function openStatsModal() {
+  if (!dashboard) return;
+  elements.statsModal?.classList.remove("hidden");
+  setText(elements.statsStatus, "Calculating from your glimmers...");
+  try {
+    const stats = await collectStatsData();
+    setText(elements.statsDaysTogether, stats.daysTogether);
+    setText(elements.statsPhotoCount, stats.photoCount);
+    setText(elements.statsTopWord, stats.topWord);
+    setText(elements.statsLongestStreak, stats.longestStreak);
+    setText(elements.statsStatus, "Auto-calculated from 微光收集 and captions.");
+  } catch (error) {
+    setText(elements.statsStatus, error.message);
+  }
 }
 
 async function refreshDashboard() {
@@ -678,6 +776,7 @@ elements.moodPickers.forEach((picker) => {
   });
 });
 elements.actionConfirm?.addEventListener("click", runConfirmedAction);
+elements.statsButton?.addEventListener("click", openStatsModal);
 elements.backpackButton?.addEventListener("click", () => elements.backpackModal.classList.remove("hidden"));
 elements.useRetroCard?.addEventListener("click", () => {
   if (!dashboard || dashboard.reward_balance <= 0) {
