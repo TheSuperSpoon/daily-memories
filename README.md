@@ -1,14 +1,7 @@
 # For Mel birthday website
 
-> Temporary test override: `config.js` sets `testGlimmerStart` to `2026-07-12`. Remove that property before production launch to restore the default `2026-07-20` start date.
-
-Open `index.html` in a browser. The site now has a dark panoramic homepage inspired by premium crypto/product websites, plus a separate Mel Planet page.
-
-Default password: `mel720`
-
 Quick edits:
 
-- Change the password in `script.js`, near the top: `password: "mel720"`.
 - After password unlock, the Chinese love-letter prelude appears as a paper-textured letter before the main site. Five clickable `光` characters must be lit before the homepage fades in.
 - To replay the prelude while testing, click `Lock` on the homepage and unlock again. Locking clears the saved prelude completion.
 - Edit the prelude wording in the `#lovePrelude` section of `index.html`; keep the five `.light-word` buttons if you want the current completion logic.
