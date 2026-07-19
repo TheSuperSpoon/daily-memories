@@ -41,6 +41,25 @@ test('invalid mood fails before RPC', async () => {
   assert.equal(h.calls.length, 0);
 });
 
+test('gift state is read and collected through profile RPCs', async () => {
+  const h = harness({
+    get_gift_icons_found: { data: { home: true }, error: null },
+    collect_gift_icon: { data: { home: true, ticket: true }, error: null }
+  });
+  assert.deepEqual(await h.repository.getGiftState(), { home: true });
+  assert.deepEqual(await h.repository.collectGiftIcon('ticket'), { home: true, ticket: true });
+  assert.deepEqual(h.calls, [
+    ['get_gift_icons_found', undefined],
+    ['collect_gift_icon', { p_gift_id: 'ticket' }]
+  ]);
+});
+
+test('invalid gift id fails before RPC', async () => {
+  const h = harness();
+  await assert.rejects(h.repository.collectGiftIcon('moon'), (error) => error.code === 'INVALID_GIFT_ID');
+  assert.equal(h.calls.length, 0);
+});
+
 test('finalize failure is exposed as retryable without leaking SDK shape', async () => {
   const h = harness({ begin_glimmer_upload: { data: { id: 'g1', asset: { provider: 'supabase' } }, error: null },
     finalize_glimmer_upload: { data: null, error: { message: 'temporary' } } });

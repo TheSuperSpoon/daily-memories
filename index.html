@@ -132,7 +132,10 @@
               </div>
             </div>
             <footer class="ticket-footer">
-              <span>I really wanna stay at your house</span>
+              <span>
+                I really wanna stay at your house
+                <button class="gift-icon gift-ticket" type="button" data-gift-id="ticket" aria-label="Hidden gift in the moonbound ticket">🎁</button>
+              </span>
               <span>NO RETURN REQUIRED</span>
             </footer>
           </article>
@@ -146,6 +149,7 @@
           <button class="nav-item" type="button" data-page="gallery"><span>03</span> Gallery</button>
           <button class="nav-item" type="button" data-page="playlist"><span>04</span> Playlist</button>
           <button class="nav-item" type="button" data-page="memories"><span>05</span> Memories</button>
+          <button id="secretGiftNav" class="nav-item gift-secret-nav hidden" type="button" data-page="gift-secret"><span>06</span> Gift</button>
         </nav>
 
         <section id="home" class="page is-active home-page">
@@ -165,6 +169,7 @@
             </div>
             <div class="hero-copy">
               <span class="purple-tape tape-two" aria-hidden="true"></span>
+              <button class="gift-icon gift-home" type="button" data-gift-id="home" aria-label="Hidden gift in the planet card">🎁</button>
               <p class="pill-label">Our Planet · Daily Love Quest</p>
               <h2>我们的星球</h2>
               <h3>从 720 到两年后，每天点亮一个灯塔</h3>
@@ -279,6 +284,7 @@
                   <div class="stamp-lighthouse" aria-hidden="true">
                     <span></span>
                   </div>
+                  <button class="gift-icon gift-lighthouse" type="button" data-gift-id="lighthouse" aria-label="Hidden gift beside the lighthouse state">🎁</button>
                   <div>
                     <p class="eyebrow">Lighthouse state</p>
                     <strong id="growthTitle">Seed</strong>
@@ -351,6 +357,11 @@
               <strong id="galleryMonthTitle"></strong>
               <button id="galleryNextMonth" type="button" aria-label="Next gallery month">›</button>
             </div>
+            <div class="gallery-today-cell" aria-label="Today's gallery date">
+              <span>Today</span>
+              <strong id="galleryTodayDate">2026.07.19</strong>
+              <button class="gift-icon gift-gallery" type="button" data-gift-id="gallery" aria-label="Hidden gift in today's gallery date">🎁</button>
+            </div>
             <p id="galleryStatus" class="glimmer-inline-status" role="status"></p>
             <button id="galleryRetryButton" class="gallery-retry hidden" type="button">Retry this month</button>
             <div id="glimmerGallery" class="glimmer-gallery"></div>
@@ -360,6 +371,7 @@
         <section id="playlist" class="page playlist-page">
           <section class="playlist-panel">
             <span class="purple-tape tape-one" aria-hidden="true"></span>
+            <button class="gift-icon gift-playlist" type="button" data-gift-id="playlist" aria-label="Hidden gift near the playlist">🎁</button>
             <div class="section-heading">
               <p class="eyebrow">Soundtrack</p>
               <h2>Our Playlist</h2>
@@ -536,7 +548,17 @@
           </section>
         </section>
 
+        <section id="gift-secret" class="page gift-secret-page">
+          <section class="gift-secret-panel">
+            <span class="purple-tape tape-two" aria-hidden="true"></span>
+            <p class="eyebrow">Secret page</p>
+            <h2>🎁 You found them all</h2>
+            <p>这里先放一个隐藏礼物占位。之后可以把你录的歌、语音、或者一段只给 Mel 的小页面放进来。</p>
+          </section>
+        </section>
+
       </section>
+      <div id="giftToast" class="gift-toast hidden" role="status" aria-live="polite"></div>
     </main>
 
     <script src="./config.js"></script>

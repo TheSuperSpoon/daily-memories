@@ -11,6 +11,16 @@ const CONFIG = {
   glimmerStart: "2026-07-20",
 };
 
+const GIFT_ICON_CONFIG = [
+  { id: "home", selector: '[data-gift-id="home"]' },
+  { id: "lighthouse", selector: '[data-gift-id="lighthouse"]' },
+  { id: "gallery", selector: '[data-gift-id="gallery"]' },
+  { id: "playlist", selector: '[data-gift-id="playlist"]' },
+  { id: "ticket", selector: '[data-gift-id="ticket"]' },
+];
+
+const GIFT_ICON_IDS = GIFT_ICON_CONFIG.map((gift) => gift.id);
+
 const memories = [
   {
     date: "Memory 01",
@@ -88,14 +98,26 @@ const returnHomeFromLetter = $("#returnHomeFromLetter");
 const navItems = [...document.querySelectorAll(".nav-item")];
 const pageJumpButtons = [...document.querySelectorAll("[data-page-jump]")];
 const pages = [...document.querySelectorAll(".page")];
+const giftButtons = GIFT_ICON_CONFIG.flatMap((gift) => [...document.querySelectorAll(gift.selector)]);
+const giftToast = $("#giftToast");
+const secretGiftNav = $("#secretGiftNav");
+const galleryTodayDate = $("#galleryTodayDate");
 let litLightCount = 0;
 let preludeCompleteTimer;
 let homecomingInterval;
 let authMode = "login";
 let authenticatedSession = null;
+let giftIconsFound = Object.fromEntries(GIFT_ICON_IDS.map((id) => [id, false]));
+let giftToastTimer;
+
+function preludeStorageKey() {
+  return authenticatedSession?.user?.id
+    ? `melPreludeComplete:${authenticatedSession.user.id}`
+    : "melPreludeComplete";
+}
 
 function hasCompletedPrelude() {
-  return localStorage.getItem("melPreludeComplete") === "yes";
+  return localStorage.getItem(preludeStorageKey()) === "yes";
 }
 
 function syncCompletedControls() {
@@ -119,20 +141,83 @@ function markPreludeLit() {
   });
 }
 
+function normalizeGiftState(state = {}) {
+  return Object.fromEntries(GIFT_ICON_IDS.map((id) => [id, state[id] === true]));
+}
+
+function foundGiftCount() {
+  return GIFT_ICON_IDS.filter((id) => giftIconsFound[id]).length;
+}
+
+function hasFoundAllGifts() {
+  return foundGiftCount() === GIFT_ICON_IDS.length;
+}
+
+function applyGiftState() {
+  giftButtons.forEach((button) => {
+    button.classList.toggle("hidden", giftIconsFound[button.dataset.giftId] === true);
+  });
+  secretGiftNav?.classList.toggle("hidden", !hasFoundAllGifts());
+}
+
+function showGiftToast(message) {
+  if (!giftToast) return;
+  window.clearTimeout(giftToastTimer);
+  giftToast.textContent = message;
+  giftToast.classList.remove("hidden");
+  giftToastTimer = window.setTimeout(() => giftToast.classList.add("hidden"), 2200);
+}
+
+async function loadGiftState() {
+  const sessionUserId = authenticatedSession?.user?.id;
+  resetGiftState();
+  if (!sessionUserId) return;
+  try {
+    const nextGiftState = await repository.getGiftState();
+    if (authenticatedSession?.user?.id !== sessionUserId) return;
+    giftIconsFound = normalizeGiftState(nextGiftState);
+    applyGiftState();
+  } catch (error) {
+    if (authenticatedSession?.user?.id !== sessionUserId) return;
+    console.error("Gift state failed to load", error);
+    applyGiftState();
+  }
+}
+
+async function collectGiftIcon(giftId) {
+  if (!GIFT_ICON_IDS.includes(giftId) || giftIconsFound[giftId]) return;
+  try {
+    giftIconsFound = normalizeGiftState(await repository.collectGiftIcon(giftId));
+    applyGiftState();
+    const count = foundGiftCount();
+    showGiftToast(hasFoundAllGifts() ? "🎁 secret unlocked" : `🎁 found! (${count}/5)`);
+  } catch (error) {
+    console.error("Gift collection failed", error);
+    showGiftToast("Could not save this gift yet.");
+  }
+}
+
+function resetGiftState() {
+  giftIconsFound = Object.fromEntries(GIFT_ICON_IDS.map((id) => [id, false]));
+  giftToast?.classList.add("hidden");
+  applyGiftState();
+}
+
 function showPage(pageId) {
-  pages.forEach((page) => page.classList.toggle("is-active", page.id === pageId));
-  navItems.forEach((item) => item.classList.toggle("is-active", item.dataset.page === pageId));
+  const targetPageId = pageId === "gift-secret" && !hasFoundAllGifts() ? "home" : pageId;
+  pages.forEach((page) => page.classList.toggle("is-active", page.id === targetPageId));
+  navItems.forEach((item) => item.classList.toggle("is-active", item.dataset.page === targetPageId));
   window.scrollTo({ top: 0, behavior: "smooth" });
-  if (pageId === "planet") {
+  if (targetPageId === "planet") {
     activatePlanetParticles();
   }
-  if (pageId === "glimmer") {
+  if (targetPageId === "glimmer") {
     activateGlimmerPage();
   }
-  if (pageId === "gallery") {
+  if (targetPageId === "gallery") {
     activateGalleryPage();
   }
-  if (pageId === "memories") {
+  if (targetPageId === "memories") {
     window.setTimeout(queuePanoramaUpdate, 0);
   }
 }
@@ -140,7 +225,8 @@ function showPage(pageId) {
 function unlock() {
   gate.classList.add("hidden");
   initializeGlimmerSession().catch((error) => console.error("Glimmer initialization failed", error));
-  if (localStorage.getItem("melPreludeComplete") === "yes") {
+  loadGiftState();
+  if (hasCompletedPrelude()) {
     showMainSite(false);
   } else {
     showPrelude();
@@ -194,7 +280,7 @@ function resetPrelude() {
 }
 
 function completePrelude() {
-  localStorage.setItem("melPreludeComplete", "yes");
+  localStorage.setItem(preludeStorageKey(), "yes");
   syncCompletedControls();
   lovePrelude.classList.add("is-complete");
 
@@ -216,6 +302,13 @@ function completePrelude() {
 }
 
 syncCompletedControls();
+if (galleryTodayDate) {
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, "0");
+  const day = String(today.getDate()).padStart(2, "0");
+  galleryTodayDate.textContent = `${year}.${month}.${day}`;
+}
 
 function setAuthMode(mode) {
   authMode = mode;
@@ -247,6 +340,7 @@ function setAuthBusy(busy, message = "") {
 function showSignedOut(message = "") {
   authenticatedSession = null;
   resetGlimmerSession();
+  resetGiftState();
   resetPrelude();
   lovePrelude.classList.add("hidden");
   site.classList.add("hidden");
@@ -395,6 +489,13 @@ navItems.forEach((item) => {
 
 pageJumpButtons.forEach((button) => {
   button.addEventListener("click", () => showPage(button.dataset.pageJump));
+});
+
+giftButtons.forEach((button) => {
+  button.addEventListener("click", (event) => {
+    event.stopPropagation();
+    collectGiftIcon(button.dataset.giftId);
+  });
 });
 
 returnLetterButton?.addEventListener("click", () => {

@@ -94,6 +94,19 @@ export class GlimmerRepository {
     return data;
   }
 
+  async getGiftState() {
+    const { data, error } = await this.supabase.rpc('get_gift_icons_found');
+    if (error) throw this.#error(error);
+    return data ?? {};
+  }
+
+  async collectGiftIcon(giftId) {
+    this.#validateGiftId(giftId);
+    const { data, error } = await this.supabase.rpc('collect_gift_icon', { p_gift_id: giftId });
+    if (error) throw this.#error(error);
+    return data ?? {};
+  }
+
   async completeRetroGlimmer(spaceId, targetDate) {
     const { data, error } = await this.supabase.rpc('complete_retro_glimmer', {
       p_space_id: spaceId, p_target_date: targetDate
@@ -114,6 +127,12 @@ export class GlimmerRepository {
   #validateMood(mood) {
     if (mood !== null && mood !== undefined && !['happy', 'neutral', 'sad', 'tired', 'loved'].includes(mood)) {
       throw Object.assign(new Error('Choose one of the available moods.'), { code: 'INVALID_MOOD' });
+    }
+  }
+
+  #validateGiftId(giftId) {
+    if (!['home', 'lighthouse', 'gallery', 'playlist', 'ticket'].includes(giftId)) {
+      throw Object.assign(new Error('Unknown hidden gift.'), { code: 'INVALID_GIFT_ID' });
     }
   }
 
