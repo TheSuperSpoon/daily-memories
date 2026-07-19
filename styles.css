@@ -2853,6 +2853,7 @@ body.prelude-complete .completed-only {
 }
 
 .spotify-frame {
+  position: relative;
   overflow: hidden;
   border: 1px solid rgba(111, 53, 180, 0.14);
   border-radius: 18px;
@@ -3625,10 +3626,13 @@ body.prelude-complete .completed-only {
 }
 
 .gift-playlist {
-  top: 26px;
-  right: 32px;
-  color: #f7f2ff;
-  opacity: 0.08;
+  top: 22px;
+  right: 24px;
+  z-index: 4;
+  color: #7c45c8;
+  background: rgba(255, 255, 255, 0.7);
+  opacity: 0.16;
+  text-shadow: 0 0 14px rgba(124, 69, 200, 0.26);
 }
 
 .gift-ticket {
