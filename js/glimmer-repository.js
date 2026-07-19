@@ -94,15 +94,15 @@ export class GlimmerRepository {
     return data;
   }
 
-  async getGiftState() {
-    const { data, error } = await this.supabase.rpc('get_gift_icons_found');
+  async getGiftState(spaceId) {
+    const { data, error } = await this.supabase.rpc('get_gift_icons_found', { p_space_id: spaceId });
     if (error) throw this.#error(error);
     return data ?? {};
   }
 
-  async collectGiftIcon(giftId) {
+  async collectGiftIcon(spaceId, giftId) {
     this.#validateGiftId(giftId);
-    const { data, error } = await this.supabase.rpc('collect_gift_icon', { p_gift_id: giftId });
+    const { data, error } = await this.supabase.rpc('collect_gift_icon', { p_space_id: spaceId, p_gift_id: giftId });
     if (error) throw this.#error(error);
     return data ?? {};
   }
@@ -145,7 +145,8 @@ export class GlimmerRepository {
       return Object.assign(new Error('Network unavailable. Try again.'), { code: 'NETWORK_ERROR', ...details });
     }
     const knownCode = ['REGISTRATION_LIMIT_REACHED', 'DAILY_GLIMMER_EXISTS', 'DELETE_WINDOW_EXPIRED',
-      'INSUFFICIENT_REWARD_BALANCE'].find((code) => message.includes(code));
+      'INSUFFICIENT_REWARD_BALANCE', 'FEATURE_FORBIDDEN', 'PROFILE_NOT_FOUND', 'INVALID_GIFT_ID']
+      .find((code) => message.includes(code));
     return Object.assign(new Error(message), { code: knownCode ?? 'BACKEND_ERROR', ...details });
   }
 

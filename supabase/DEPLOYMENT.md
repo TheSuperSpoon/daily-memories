@@ -13,6 +13,10 @@
 
 - `202607130001_add_glimmer_mood.sql` deployed successfully on 2026-07-16 after a
   dry run confirmed it was the only pending migration.
+- `202607190001_gift_icons_found.sql` deployed successfully on 2026-07-19 after a
+  dry run confirmed it was the only pending migration. The gift RPCs require the
+  authenticated member to hold the `mel` role in the requested space; Ray is
+  rejected with `FEATURE_FORBIDDEN`.
 - Cloud schema verification confirmed `glimmers.mood`, `glimmers_mood_check`, the
   six-argument `begin_glimmer_upload` signature, authenticated execute permission,
   and no anonymous execute permission.
@@ -42,6 +46,12 @@
   private bucket correct, seven public policies and three Storage object policies.
 - Permission audit: all seven public tables have RLS, anonymous users can execute
   zero business RPCs, and authenticated users cannot mutate the reward ledger.
+- Gift identity audit: remote schema lint returned no errors; the remote-safe pgTAP
+  transaction reached `ok 9`, covering RPC presence, anonymous denial, Ray denial,
+  Mel read/collect success, wrong-space denial, and missing-profile handling. A
+  Chrome smoke verified Mel-only gift, STATS, and birthday-letter controls,
+  Ray-only upload ownership, refresh persistence, and same-origin account
+  switching. The temporary gift write was removed afterward.
 
 ## Commands
 

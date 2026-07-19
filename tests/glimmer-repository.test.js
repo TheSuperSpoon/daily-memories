@@ -46,18 +46,23 @@ test('gift state is read and collected through profile RPCs', async () => {
     get_gift_icons_found: { data: { home: true }, error: null },
     collect_gift_icon: { data: { home: true, ticket: true }, error: null }
   });
-  assert.deepEqual(await h.repository.getGiftState(), { home: true });
-  assert.deepEqual(await h.repository.collectGiftIcon('ticket'), { home: true, ticket: true });
+  assert.deepEqual(await h.repository.getGiftState('space-1'), { home: true });
+  assert.deepEqual(await h.repository.collectGiftIcon('space-1', 'ticket'), { home: true, ticket: true });
   assert.deepEqual(h.calls, [
-    ['get_gift_icons_found', undefined],
-    ['collect_gift_icon', { p_gift_id: 'ticket' }]
+    ['get_gift_icons_found', { p_space_id: 'space-1' }],
+    ['collect_gift_icon', { p_space_id: 'space-1', p_gift_id: 'ticket' }]
   ]);
 });
 
 test('invalid gift id fails before RPC', async () => {
   const h = harness();
-  await assert.rejects(h.repository.collectGiftIcon('moon'), (error) => error.code === 'INVALID_GIFT_ID');
+  await assert.rejects(h.repository.collectGiftIcon('space-1', 'moon'), (error) => error.code === 'INVALID_GIFT_ID');
   assert.equal(h.calls.length, 0);
+});
+
+test('gift role authorization failures retain a stable code', async () => {
+  const h = harness({ get_gift_icons_found: { data: null, error: { message: 'FEATURE_FORBIDDEN' } } });
+  await assert.rejects(h.repository.getGiftState('space-1'), (error) => error.code === 'FEATURE_FORBIDDEN');
 });
 
 test('finalize failure is exposed as retryable without leaking SDK shape', async () => {
