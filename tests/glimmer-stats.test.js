@@ -8,8 +8,8 @@ test("relationship day counts are inclusive and reject reversed ranges", () => {
   assert.equal(daysBetweenInclusive("2026-03-30", "2026-03-29"), 0);
 });
 
-test("caption tokenization preserves the current English and Han contract", () => {
-  assert.deepEqual(captionWords("Hello, HELLO! 今天很好 a"), ["hello", "hello", "今天很好"]);
+test("caption tokenization uses natural English and Chinese word boundaries", () => {
+  assert.deepEqual(captionWords("Hello, HELLO! 今天很好 a"), ["hello", "hello", "今天", "很好"]);
 });
 
 test("relationship stats cover empty data, stop words, ties, and interrupted streaks", () => {

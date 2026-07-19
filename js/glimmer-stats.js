@@ -1,3 +1,5 @@
+import { tokenizeNaturalLanguage } from "./text-tokenizer.js";
+
 function parseDate(key) {
   const [year, month, day] = key.split("-").map(Number);
   return new Date(year, month - 1, day);
@@ -12,9 +14,7 @@ export function daysBetweenInclusive(fromKey, toKey) {
 }
 
 export function captionWords(note) {
-  return (note || "")
-    .toLowerCase()
-    .match(/[\p{Script=Han}]{2,}|[a-z0-9']{2,}/gu) ?? [];
+  return tokenizeNaturalLanguage(note);
 }
 
 export function calculateRelationshipStats({ relationshipStart, glimmerStart, today, monthData, stopWords }) {

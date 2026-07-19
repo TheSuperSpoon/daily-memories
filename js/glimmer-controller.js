@@ -1,7 +1,8 @@
 import { appConfig, repository } from "./app-services.js";
 import { canDeleteAt, indexMonth, LatestRequest, moodDraftValue, monthKey, monthRange } from "./glimmer-model.js";
-import { canAccessMelFeature } from "./feature-access.js";
+import { canAccessMelFeature, canOpenStats } from "./feature-access.js";
 import { calculateRelationshipStats } from "./glimmer-stats.js";
+import { BASE_CAPTION_STOP_WORDS } from "./text-tokenizer.js";
 
 export { monthKey, monthRange } from "./glimmer-model.js";
 
@@ -91,12 +92,6 @@ const moodOptions = {
   tired: "😴",
   loved: "🥰",
 };
-
-const captionStopWords = new Set([
-  "a", "an", "and", "are", "as", "at", "be", "but", "for", "from", "i", "in", "is", "it", "me",
-  "my", "of", "on", "or", "our", "so", "the", "this", "to", "we", "with", "you", "your",
-  "了", "的", "我", "你", "我们", "今天", "就是", "一个", "没有",
-]);
 
 const imageObserver = typeof IntersectionObserver === "function"
   ? new IntersectionObserver((entries) => {
@@ -468,7 +463,7 @@ function closeModals() {
 }
 
 function syncStatsAccess() {
-  const allowed = canAccessMelFeature(dashboard);
+  const allowed = canOpenStats(dashboard);
   elements.statsButton?.classList.toggle("hidden", !allowed);
   if (!allowed) elements.statsModal?.classList.add("hidden");
 }
@@ -482,12 +477,12 @@ async function collectStatsData() {
     glimmerStart: CONFIG.glimmerStart,
     today,
     monthData,
-    stopWords: captionStopWords,
+    stopWords: BASE_CAPTION_STOP_WORDS,
   });
 }
 
 async function openStatsModal() {
-  if (!canAccessMelFeature(dashboard)) {
+  if (!canOpenStats(dashboard)) {
     elements.statsModal?.classList.add("hidden");
     return;
   }
