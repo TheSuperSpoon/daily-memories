@@ -41,7 +41,7 @@ test('invalid mood fails before RPC', async () => {
   assert.equal(h.calls.length, 0);
 });
 
-test('gift state is read and collected through profile RPCs', async () => {
+test('gift state is read and collected through role-bound RPCs', async () => {
   const h = harness({
     get_gift_icons_found: { data: { home: true }, error: null },
     collect_gift_icon: { data: { home: true, ticket: true }, error: null }

@@ -6,7 +6,14 @@ import {
   initializeGlimmerSession,
   resetGlimmerSession,
 } from "./js/glimmer-controller.js";
-import { canAccessGiftPage, canAccessMelFeature } from "./js/feature-access.js";
+import {
+  canAccessGiftPage,
+  canAccessMelFeature,
+  canReturnToPrelude,
+  accessiblePage,
+  shouldShowPrelude,
+} from "./js/feature-access.js";
+import { collectGiftForIdentity, loadGiftStateForIdentity } from "./js/gift-access-service.js";
 
 const CONFIG = {
   birthday: "2026-07-20T00:00:00",
@@ -104,6 +111,11 @@ const giftButtons = GIFT_ICON_CONFIG.flatMap((gift) => [...document.querySelecto
 const giftToast = $("#giftToast");
 const secretGiftNav = $("#secretGiftNav");
 const galleryTodayDate = $("#galleryTodayDate");
+
+// The ticket is opened from both the prelude and the main site. Keep its fixed
+// overlay outside either visibility container so both entry points can show it.
+if (ticketOverlay) document.body.append(ticketOverlay);
+
 let litLightCount = 0;
 let preludeCompleteTimer;
 let homecomingInterval;
@@ -181,7 +193,11 @@ async function loadGiftState() {
   resetGiftState();
   if (!sessionUserId || !canAccessMelFeature(currentIdentity)) return;
   try {
-    const nextGiftState = await repository.getGiftState(appConfig.spaceId);
+    const nextGiftState = await loadGiftStateForIdentity({
+      identity: currentIdentity,
+      spaceId: appConfig.spaceId,
+      repository,
+    });
     if (authenticatedSession?.user?.id !== sessionUserId) return;
     giftIconsFound = normalizeGiftState(nextGiftState);
     giftStateReady = true;
@@ -196,7 +212,12 @@ async function loadGiftState() {
 async function collectGiftIcon(giftId) {
   if (!canAccessMelFeature(currentIdentity) || !giftStateReady || !GIFT_ICON_IDS.includes(giftId) || giftIconsFound[giftId]) return;
   try {
-    giftIconsFound = normalizeGiftState(await repository.collectGiftIcon(appConfig.spaceId, giftId));
+    giftIconsFound = normalizeGiftState(await collectGiftForIdentity({
+      identity: currentIdentity,
+      spaceId: appConfig.spaceId,
+      giftId,
+      repository,
+    }));
     applyGiftState();
     const count = foundGiftCount();
     showGiftToast(hasFoundAllGifts() ? "🎁 secret unlocked" : `🎁 found! (${count}/5)`);
@@ -214,7 +235,7 @@ function resetGiftState() {
 }
 
 function showPage(pageId) {
-  const targetPageId = pageId === "gift-secret" && !canAccessGiftPage(currentIdentity, hasFoundAllGifts()) ? "home" : pageId;
+  const targetPageId = accessiblePage(pageId, currentIdentity, hasFoundAllGifts());
   pages.forEach((page) => page.classList.toggle("is-active", page.id === targetPageId));
   navItems.forEach((item) => item.classList.toggle("is-active", item.dataset.page === targetPageId));
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -240,7 +261,7 @@ async function unlock() {
   syncCompletedControls();
   applyGiftState();
   await loadGiftState();
-  if (!canAccessMelFeature(currentIdentity) || hasCompletedPrelude()) {
+  if (!shouldShowPrelude(currentIdentity, hasCompletedPrelude())) {
     showMainSite(false);
   } else {
     showPrelude();
@@ -362,6 +383,10 @@ function showSignedOut(message = "") {
   resetGlimmerSession();
   resetGiftState();
   resetPrelude();
+  showPage("home");
+  setTicketPeek(false);
+  ticketOverlay?.classList.add("hidden");
+  ticketOverlay?.classList.remove("is-closing");
   lovePrelude.classList.add("hidden");
   site.classList.add("hidden");
   gate.classList.remove("hidden");
@@ -519,12 +544,12 @@ giftButtons.forEach((button) => {
 });
 
 returnLetterButton?.addEventListener("click", () => {
-  if (!canAccessMelFeature(currentIdentity) || !hasCompletedPrelude()) return;
+  if (!canReturnToPrelude(currentIdentity, hasCompletedPrelude())) return;
   showPrelude();
 });
 
 returnHomeFromLetter?.addEventListener("click", () => {
-  if (!canAccessMelFeature(currentIdentity) || !hasCompletedPrelude()) return;
+  if (!canReturnToPrelude(currentIdentity, hasCompletedPrelude())) return;
   showMainSite(false);
 });
 

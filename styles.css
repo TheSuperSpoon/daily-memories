@@ -3670,7 +3670,6 @@ body.prelude-complete .completed-only {
 
 .gift-secret-page {
   min-height: calc(100vh - 72px);
-  display: grid;
   place-items: center;
   padding: clamp(42px, 7vw, 86px) clamp(18px, 6vw, 88px);
   color: #3d2b4e;
@@ -3678,6 +3677,10 @@ body.prelude-complete .completed-only {
     radial-gradient(circle at 18% 20%, rgba(238, 224, 255, 0.88), transparent 20rem),
     radial-gradient(circle at 82% 18%, rgba(255, 255, 255, 0.82), transparent 22rem),
     linear-gradient(180deg, #fffafd, #f3e7ff);
+}
+
+.gift-secret-page.is-active {
+  display: grid;
 }
 
 .gift-secret-panel {
