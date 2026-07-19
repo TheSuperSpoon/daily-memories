@@ -2,9 +2,11 @@ import { appConfig, repository } from "./js/app-services.js";
 import {
   activateGalleryPage,
   activateGlimmerPage,
+  getGlimmerIdentity,
   initializeGlimmerSession,
   resetGlimmerSession,
 } from "./js/glimmer-controller.js";
+import { canAccessGiftPage, canAccessMelFeature } from "./js/feature-access.js";
 
 const CONFIG = {
   birthday: "2026-07-20T00:00:00",
@@ -107,7 +109,9 @@ let preludeCompleteTimer;
 let homecomingInterval;
 let authMode = "login";
 let authenticatedSession = null;
+let currentIdentity = null;
 let giftIconsFound = Object.fromEntries(GIFT_ICON_IDS.map((id) => [id, false]));
+let giftStateReady = false;
 let giftToastTimer;
 
 function preludeStorageKey() {
@@ -117,11 +121,14 @@ function preludeStorageKey() {
 }
 
 function hasCompletedPrelude() {
-  return localStorage.getItem(preludeStorageKey()) === "yes";
+  return canAccessMelFeature(currentIdentity) && localStorage.getItem(preludeStorageKey()) === "yes";
 }
 
 function syncCompletedControls() {
-  document.body.classList.toggle("prelude-complete", hasCompletedPrelude());
+  const canUsePrelude = canAccessMelFeature(currentIdentity);
+  const completed = canUsePrelude && hasCompletedPrelude();
+  document.body.classList.toggle("prelude-complete", completed);
+  returnLetterButton?.classList.toggle("hidden", !completed);
 }
 
 function setTicketPeek(open) {
@@ -154,10 +161,11 @@ function hasFoundAllGifts() {
 }
 
 function applyGiftState() {
+  const allowed = canAccessMelFeature(currentIdentity) && giftStateReady;
   giftButtons.forEach((button) => {
-    button.classList.toggle("hidden", giftIconsFound[button.dataset.giftId] === true);
+    button.classList.toggle("hidden", !allowed || giftIconsFound[button.dataset.giftId] === true);
   });
-  secretGiftNav?.classList.toggle("hidden", !hasFoundAllGifts());
+  secretGiftNav?.classList.toggle("hidden", !canAccessGiftPage(currentIdentity, hasFoundAllGifts()));
 }
 
 function showGiftToast(message) {
@@ -171,23 +179,24 @@ function showGiftToast(message) {
 async function loadGiftState() {
   const sessionUserId = authenticatedSession?.user?.id;
   resetGiftState();
-  if (!sessionUserId) return;
+  if (!sessionUserId || !canAccessMelFeature(currentIdentity)) return;
   try {
-    const nextGiftState = await repository.getGiftState();
+    const nextGiftState = await repository.getGiftState(appConfig.spaceId);
     if (authenticatedSession?.user?.id !== sessionUserId) return;
     giftIconsFound = normalizeGiftState(nextGiftState);
+    giftStateReady = true;
     applyGiftState();
   } catch (error) {
     if (authenticatedSession?.user?.id !== sessionUserId) return;
     console.error("Gift state failed to load", error);
-    applyGiftState();
+    resetGiftState();
   }
 }
 
 async function collectGiftIcon(giftId) {
-  if (!GIFT_ICON_IDS.includes(giftId) || giftIconsFound[giftId]) return;
+  if (!canAccessMelFeature(currentIdentity) || !giftStateReady || !GIFT_ICON_IDS.includes(giftId) || giftIconsFound[giftId]) return;
   try {
-    giftIconsFound = normalizeGiftState(await repository.collectGiftIcon(giftId));
+    giftIconsFound = normalizeGiftState(await repository.collectGiftIcon(appConfig.spaceId, giftId));
     applyGiftState();
     const count = foundGiftCount();
     showGiftToast(hasFoundAllGifts() ? "🎁 secret unlocked" : `🎁 found! (${count}/5)`);
@@ -199,12 +208,13 @@ async function collectGiftIcon(giftId) {
 
 function resetGiftState() {
   giftIconsFound = Object.fromEntries(GIFT_ICON_IDS.map((id) => [id, false]));
+  giftStateReady = false;
   giftToast?.classList.add("hidden");
   applyGiftState();
 }
 
 function showPage(pageId) {
-  const targetPageId = pageId === "gift-secret" && !hasFoundAllGifts() ? "home" : pageId;
+  const targetPageId = pageId === "gift-secret" && !canAccessGiftPage(currentIdentity, hasFoundAllGifts()) ? "home" : pageId;
   pages.forEach((page) => page.classList.toggle("is-active", page.id === targetPageId));
   navItems.forEach((item) => item.classList.toggle("is-active", item.dataset.page === targetPageId));
   window.scrollTo({ top: 0, behavior: "smooth" });
@@ -222,11 +232,15 @@ function showPage(pageId) {
   }
 }
 
-function unlock() {
+async function unlock() {
+  await initializeGlimmerSession();
+  currentIdentity = getGlimmerIdentity();
+  if (!currentIdentity) throw new Error("Could not load your member role.");
   gate.classList.add("hidden");
-  initializeGlimmerSession().catch((error) => console.error("Glimmer initialization failed", error));
-  loadGiftState();
-  if (hasCompletedPrelude()) {
+  syncCompletedControls();
+  applyGiftState();
+  await loadGiftState();
+  if (!canAccessMelFeature(currentIdentity) || hasCompletedPrelude()) {
     showMainSite(false);
   } else {
     showPrelude();
@@ -234,6 +248,10 @@ function unlock() {
 }
 
 function showPrelude() {
+  if (!canAccessMelFeature(currentIdentity)) {
+    showMainSite(false);
+    return;
+  }
   site.classList.add("hidden");
   lovePrelude.classList.remove("hidden");
   setTicketPeek(false);
@@ -280,6 +298,7 @@ function resetPrelude() {
 }
 
 function completePrelude() {
+  if (!canAccessMelFeature(currentIdentity)) return;
   localStorage.setItem(preludeStorageKey(), "yes");
   syncCompletedControls();
   lovePrelude.classList.add("is-complete");
@@ -339,6 +358,7 @@ function setAuthBusy(busy, message = "") {
 
 function showSignedOut(message = "") {
   authenticatedSession = null;
+  currentIdentity = null;
   resetGlimmerSession();
   resetGiftState();
   resetPrelude();
@@ -368,7 +388,7 @@ async function handleAuthSubmit(event) {
       authenticatedSession = data.session;
     }
     authMessage.textContent = "";
-    unlock();
+    await unlock();
   } catch (error) {
     authMessage.textContent = error.code === "REGISTRATION_LIMIT_REACHED"
       ? "Both member accounts have already been claimed."
@@ -422,7 +442,7 @@ async function initializeAuth() {
   setAuthBusy(true, "Restoring session...");
   try {
     authenticatedSession = await repository.getSession();
-    if (authenticatedSession) unlock();
+    if (authenticatedSession) await unlock();
     else showSignedOut();
   } catch (error) {
     showSignedOut(error.message);
@@ -499,12 +519,12 @@ giftButtons.forEach((button) => {
 });
 
 returnLetterButton?.addEventListener("click", () => {
-  if (!hasCompletedPrelude()) return;
+  if (!canAccessMelFeature(currentIdentity) || !hasCompletedPrelude()) return;
   showPrelude();
 });
 
 returnHomeFromLetter?.addEventListener("click", () => {
-  if (!hasCompletedPrelude()) return;
+  if (!canAccessMelFeature(currentIdentity) || !hasCompletedPrelude()) return;
   showMainSite(false);
 });
 

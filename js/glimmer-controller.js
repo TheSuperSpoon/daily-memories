@@ -1,5 +1,7 @@
 import { appConfig, repository } from "./app-services.js";
 import { canDeleteAt, indexMonth, LatestRequest, moodDraftValue, monthKey, monthRange } from "./glimmer-model.js";
+import { canAccessMelFeature } from "./feature-access.js";
+import { calculateRelationshipStats } from "./glimmer-stats.js";
 
 export { monthKey, monthRange } from "./glimmer-model.js";
 
@@ -231,10 +233,6 @@ function dayNumberFromStart(key) {
   return Math.max(1, Math.floor((parseDate(key) - parseDate(CONFIG.glimmerStart)) / 86400000) + 1);
 }
 
-function daysBetweenInclusive(fromKey, toKey) {
-  return Math.max(0, Math.floor((parseDate(toKey) - parseDate(fromKey)) / 86400000) + 1);
-}
-
 function addMonths(date, offset) {
   return new Date(date.getFullYear(), date.getMonth() + offset, 1);
 }
@@ -249,12 +247,6 @@ function monthsBetween(fromKey, toKey) {
     cursor = addMonths(cursor, 1);
   }
   return months;
-}
-
-function captionWords(note) {
-  return (note || "")
-    .toLowerCase()
-    .match(/[\p{Script=Han}]{2,}|[a-z0-9']{2,}/gu) ?? [];
 }
 
 function setText(element, value) {
@@ -475,47 +467,30 @@ function closeModals() {
   elements.statsModal?.classList.add("hidden");
 }
 
+function syncStatsAccess() {
+  const allowed = canAccessMelFeature(dashboard);
+  elements.statsButton?.classList.toggle("hidden", !allowed);
+  if (!allowed) elements.statsModal?.classList.add("hidden");
+}
+
 async function collectStatsData() {
   const today = dashboard?.local_today ?? dateKey(new Date());
   const months = monthsBetween(CONFIG.glimmerStart, today);
   const monthData = await Promise.all(months.map((month) => loadMonth(month)));
-  const items = monthData.flatMap((data) => data.items);
-  const completeDays = new Set();
-  monthData.forEach((data) => {
-    Object.entries(data.days).forEach(([key, day]) => {
-      if (key >= CONFIG.glimmerStart && key <= today && isCompleteDay(day)) completeDays.add(key);
-    });
+  return calculateRelationshipStats({
+    relationshipStart: CONFIG.relationshipStart,
+    glimmerStart: CONFIG.glimmerStart,
+    today,
+    monthData,
+    stopWords: captionStopWords,
   });
-
-  let longestStreak = 0;
-  let currentStreak = 0;
-  for (let cursor = parseDate(CONFIG.glimmerStart); dateKey(cursor) <= today; cursor.setDate(cursor.getDate() + 1)) {
-    if (completeDays.has(dateKey(cursor))) {
-      currentStreak += 1;
-      longestStreak = Math.max(longestStreak, currentStreak);
-    } else {
-      currentStreak = 0;
-    }
-  }
-
-  const wordCounts = new Map();
-  items.forEach((item) => {
-    captionWords(item.note).forEach((word) => {
-      if (!captionStopWords.has(word)) wordCounts.set(word, (wordCounts.get(word) ?? 0) + 1);
-    });
-  });
-  const topWord = [...wordCounts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0]?.[0] ?? "-";
-
-  return {
-    daysTogether: daysBetweenInclusive(CONFIG.relationshipStart, today),
-    photoCount: items.length,
-    topWord,
-    longestStreak,
-  };
 }
 
 async function openStatsModal() {
-  if (!dashboard) return;
+  if (!canAccessMelFeature(dashboard)) {
+    elements.statsModal?.classList.add("hidden");
+    return;
+  }
   elements.statsModal?.classList.remove("hidden");
   setText(elements.statsStatus, "Calculating from your glimmers...");
   try {
@@ -527,12 +502,14 @@ async function openStatsModal() {
     setText(elements.statsStatus, "Auto-calculated from 微光收集 and captions.");
   } catch (error) {
     setText(elements.statsStatus, error.message);
+    if (error.code === "SESSION_EXPIRED") window.dispatchEvent(new CustomEvent("app-session-expired"));
   }
 }
 
 async function refreshDashboard() {
   dashboard = await repository.getDashboard(appConfig.spaceId);
   dashboardClockOffset = new Date(dashboard.server_now).getTime() - Date.now();
+  syncStatsAccess();
 }
 
 async function refreshMonth(date) {
@@ -698,7 +675,7 @@ async function setGalleryMonth(offset) {
 }
 
 export async function initializeGlimmerSession() {
-  if (initialized) return;
+  if (initialized) return dashboard;
   if (initializing) return initializing;
   const generation = sessionGeneration;
   const task = (async () => {
@@ -711,7 +688,9 @@ export async function initializeGlimmerSession() {
     await loadMonth(calendarMonth);
     if (generation !== sessionGeneration) return;
     initialized = true;
+    syncStatsAccess();
     renderGlimmer();
+    return dashboard;
   })().catch((error) => {
     setText(elements.dailyCopy, error.message);
     if (error.code === "SESSION_EXPIRED") window.dispatchEvent(new CustomEvent("app-session-expired"));
@@ -739,6 +718,7 @@ export function resetGlimmerSession() {
   initialized = false;
   initializing = null;
   dashboard = null;
+  syncStatsAccess();
   retroMode = false;
   pendingFinalizeId = null;
   pendingAction = null;
@@ -753,6 +733,16 @@ export function resetGlimmerSession() {
   closeModals();
   elements.uploadForm?.reset();
   elements.gallery?.replaceChildren();
+}
+
+export function getGlimmerIdentity() {
+  if (!dashboard) return null;
+  return Object.freeze({
+    user_id: dashboard.user_id,
+    role: dashboard.role,
+    display_name: dashboard.display_name,
+    space_id: appConfig.spaceId,
+  });
 }
 
 elements.prevMonth?.addEventListener("click", () => setCalendarMonth(-1));
