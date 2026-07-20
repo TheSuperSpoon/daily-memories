@@ -2862,6 +2862,8 @@ body.prelude-complete .completed-only {
 }
 
 .spotify-frame iframe {
+  position: relative;
+  z-index: 1;
   display: block;
   border: 0;
 }
@@ -3626,13 +3628,28 @@ body.prelude-complete .completed-only {
 }
 
 .gift-playlist {
-  top: 22px;
-  right: 24px;
-  z-index: 4;
+  top: 248px;
+  right: 52px;
+  z-index: 30;
+  display: inline-grid;
   color: #7c45c8;
-  background: rgba(255, 255, 255, 0.7);
-  opacity: 0.16;
-  text-shadow: 0 0 14px rgba(124, 69, 200, 0.26);
+  background: #fff;
+  opacity: 1;
+  box-shadow:
+    0 0 0 2px rgba(124, 69, 200, 0.22),
+    0 10px 26px rgba(68, 35, 112, 0.22);
+  filter: none;
+  text-shadow: 0 0 12px rgba(124, 69, 200, 0.34);
+}
+
+.gift-playlist.hidden {
+  display: inline-grid;
+}
+
+.gift-playlist:hover,
+.gift-playlist:focus-visible {
+  opacity: 1;
+  transform: scale(1.12);
 }
 
 .gift-ticket {
