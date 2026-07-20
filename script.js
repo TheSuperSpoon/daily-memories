@@ -1,4 +1,4 @@
-import { appConfig, repository } from "./js/app-services.js?v=20260720-login-timezone";
+import { appConfig, repository } from "./js/app-services.js?v=20260721-gift-audio";
 import {
   activateGalleryPage,
   activateGlimmerPage,
@@ -13,7 +13,13 @@ import {
   accessiblePage,
   shouldShowPrelude,
 } from "./js/feature-access.js";
-import { collectGiftForIdentity, loadGiftStateForIdentity } from "./js/gift-access-service.js";
+import {
+  collectGiftForIdentity,
+  loadGiftAudioForIdentity,
+  loadGiftStateForIdentity,
+} from "./js/gift-access-service.js?v=20260721-gift-audio";
+import { clearGiftAudioCache, resolveGiftAudioSource } from "./js/gift-audio-cache.js?v=20260721-gift-audio";
+import { clearLegacyMelPreludeState } from "./js/prelude-storage.js?v=20260721-launch-reset";
 import { activateMemoriesPage, resetMemorySession } from "./js/memory-controller.js?v=20260720-login-timezone";
 import { timePresentation } from "./js/memory-model.js?v=20260720-login-timezone";
 
@@ -67,10 +73,22 @@ const pages = [...document.querySelectorAll(".page")];
 const giftButtons = GIFT_ICON_CONFIG.flatMap((gift) => [...document.querySelectorAll(gift.selector)]);
 const giftToast = $("#giftToast");
 const secretGiftNav = $("#secretGiftNav");
+const giftAudioExperience = $("#giftAudioExperience");
+const giftAudioUnlockTitle = $("#giftAudioUnlockTitle");
+const giftAudioUnlockCopy = $("#giftAudioUnlockCopy");
+const giftAudio = $("#giftAudio");
+const giftAudioPlay = $("#giftAudioPlay");
+const giftAudioProgress = $("#giftAudioProgress");
+const giftAudioCurrent = $("#giftAudioCurrent");
+const giftAudioDuration = $("#giftAudioDuration");
+const giftAudioStatus = $("#giftAudioStatus");
+const giftAudioRetry = $("#giftAudioRetry");
 const galleryTodayDate = $("#galleryTodayDate");
 const loginTimezoneButtons = [...document.querySelectorAll("[data-login-timezone]")];
 const TIMEZONE_PREFERENCE_KEY = "memory-preferred-timezone";
 const SUPPORTED_TIMEZONES = ["Asia/Shanghai", "America/Los_Angeles"];
+
+clearLegacyMelPreludeState();
 
 // The ticket is opened from both the prelude and the main site. Keep its fixed
 // overlay outside either visibility container so both entry points can show it.
@@ -85,6 +103,12 @@ let currentIdentity = null;
 let giftIconsFound = Object.fromEntries(GIFT_ICON_IDS.map((id) => [id, false]));
 let giftStateReady = false;
 let giftToastTimer;
+let giftAudioCachePromise = null;
+let giftAudioSource = null;
+let giftAudioObjectUrl = null;
+let giftAudioLoadStartedAt = 0;
+let giftAudioSlowTimer;
+let giftAudioGeneration = 0;
 let selectedLoginTimezone = localStorage.getItem(TIMEZONE_PREFERENCE_KEY) || "Asia/Shanghai";
 let loginTimezoneTimer;
 
@@ -189,6 +213,13 @@ async function loadGiftState() {
     giftIconsFound = normalizeGiftState(nextGiftState);
     giftStateReady = true;
     applyGiftState();
+    if (foundGiftCount() > 0) {
+      void startGiftAudioCache().catch((error) => console.warn("Gift audio pre-cache paused", error));
+    } else {
+      void clearGiftAudioCache().then(() => {
+        if (foundGiftCount() === 0 && giftAudioExperience) giftAudioExperience.dataset.cacheState = "empty";
+      });
+    }
   } catch (error) {
     if (authenticatedSession?.user?.id !== sessionUserId) return;
     console.error("Gift state failed to load", error);
@@ -208,6 +239,7 @@ async function collectGiftIcon(giftId) {
     applyGiftState();
     const count = foundGiftCount();
     showGiftToast(hasFoundAllGifts() ? "🎁 secret unlocked" : `🎁 found! (${count}/5)`);
+    if (count > 0) void startGiftAudioCache().catch((error) => console.warn("Gift audio pre-cache paused", error));
   } catch (error) {
     console.error("Gift collection failed", error);
     showGiftToast("Could not save this gift yet.");
@@ -219,6 +251,122 @@ function resetGiftState() {
   giftStateReady = false;
   giftToast?.classList.add("hidden");
   applyGiftState();
+  resetGiftAudio();
+}
+
+function formatAudioTime(value) {
+  if (!Number.isFinite(value) || value < 0) return "--:--";
+  const minutes = Math.floor(value / 60);
+  const seconds = Math.floor(value % 60);
+  return `${minutes}:${String(seconds).padStart(2, "0")}`;
+}
+
+function setGiftAudioState(state, message) {
+  if (!giftAudioExperience) return;
+  giftAudioExperience.classList.toggle("is-loading", state === "loading");
+  giftAudioExperience.classList.toggle("is-ready", state === "ready");
+  giftAudioExperience.classList.toggle("is-error", state === "error");
+  giftAudioRetry?.classList.toggle("hidden", state !== "error");
+  if (giftAudioStatus && message) giftAudioStatus.textContent = message;
+}
+
+function resetGiftAudio() {
+  giftAudioGeneration += 1;
+  window.clearTimeout(giftAudioSlowTimer);
+  if (giftAudio) {
+    giftAudio.pause();
+    giftAudio.removeAttribute("src");
+    giftAudio.load();
+  }
+  if (giftAudioObjectUrl) URL.revokeObjectURL(giftAudioObjectUrl);
+  giftAudioObjectUrl = null;
+  giftAudioSource = null;
+  giftAudioCachePromise = null;
+  giftAudioLoadStartedAt = 0;
+  if (giftAudioPlay) {
+    giftAudioPlay.disabled = true;
+    giftAudioPlay.classList.remove("is-playing");
+    giftAudioPlay.setAttribute("aria-label", "Play In Loving Memory");
+    giftAudioPlay.querySelector("span").textContent = "▶";
+  }
+  if (giftAudioProgress) {
+    giftAudioProgress.disabled = true;
+    giftAudioProgress.max = "0";
+    giftAudioProgress.value = "0";
+    giftAudioProgress.style.setProperty("--gift-audio-progress", "0%");
+  }
+  if (giftAudioCurrent) giftAudioCurrent.textContent = "0:00";
+  if (giftAudioDuration) giftAudioDuration.textContent = "5:40";
+  if (giftAudioUnlockTitle) giftAudioUnlockTitle.textContent = "正在打开这份礼物";
+  if (giftAudioUnlockCopy) giftAudioUnlockCopy.textContent = "把藏在云端的声音，轻轻带到你身边…";
+  setGiftAudioState("loading", "Preparing your gift…");
+  giftAudioExperience?.removeAttribute("data-load-ms");
+  giftAudioExperience?.removeAttribute("data-audio-source");
+  giftAudioExperience?.removeAttribute("data-cache-state");
+}
+
+async function startGiftAudioCache() {
+  const userId = authenticatedSession?.user?.id;
+  if (!userId || !canAccessMelFeature(currentIdentity) || foundGiftCount() < 1) return null;
+  if (giftAudioSource) return giftAudioSource;
+  if (giftAudioCachePromise) return giftAudioCachePromise;
+  const generation = giftAudioGeneration;
+  if (giftAudioExperience) giftAudioExperience.dataset.cacheState = "loading";
+  giftAudioCachePromise = (async () => {
+    const media = await loadGiftAudioForIdentity({
+      identity: currentIdentity,
+      foundAnyGift: true,
+      spaceId: appConfig.spaceId,
+      repository,
+    });
+    if (!media?.url) return null;
+    const localSource = await resolveGiftAudioSource(media);
+    if (authenticatedSession?.user?.id !== userId || generation !== giftAudioGeneration) {
+      URL.revokeObjectURL(localSource.url);
+      return null;
+    }
+    giftAudioObjectUrl = localSource.url;
+    giftAudioSource = { ...media, ...localSource };
+    if (giftAudioExperience) {
+      giftAudioExperience.dataset.cacheState = "ready";
+      giftAudioExperience.dataset.audioSource = localSource.source;
+    }
+    return giftAudioSource;
+  })().catch((error) => {
+    if (generation === giftAudioGeneration) giftAudioCachePromise = null;
+    if (generation === giftAudioGeneration && giftAudioExperience) giftAudioExperience.dataset.cacheState = "error";
+    throw error;
+  });
+  return giftAudioCachePromise;
+}
+
+async function loadGiftAudio() {
+  const userId = authenticatedSession?.user?.id;
+  if (!userId || !hasFoundAllGifts() || giftAudioExperience?.classList.contains("is-ready")) return;
+  const generation = giftAudioGeneration;
+  giftAudioLoadStartedAt = performance.now();
+  setGiftAudioState("loading", "Preparing your gift…");
+  if (giftAudioUnlockTitle) giftAudioUnlockTitle.textContent = "正在打开这份礼物";
+  if (giftAudioUnlockCopy) giftAudioUnlockCopy.textContent = "把藏在云端的声音，轻轻带到你身边…";
+  window.clearTimeout(giftAudioSlowTimer);
+  giftAudioSlowTimer = window.setTimeout(() => {
+    if (giftAudioUnlockTitle) giftAudioUnlockTitle.textContent = "礼物正在向你走来";
+    if (giftAudioUnlockCopy) giftAudioUnlockCopy.textContent = "第一次会多等一会儿，以后这台设备会直接从本地打开。";
+  }, 1600);
+  try {
+    const media = await startGiftAudioCache();
+    if (authenticatedSession?.user?.id !== userId || generation !== giftAudioGeneration || !media?.url) return;
+    if (giftAudio.src === media.url) return;
+    giftAudio.src = media.url;
+    giftAudio.load();
+  } catch (error) {
+    if (authenticatedSession?.user?.id !== userId || generation !== giftAudioGeneration) return;
+    window.clearTimeout(giftAudioSlowTimer);
+    console.error("Gift audio failed to load", error);
+    if (giftAudioUnlockTitle) giftAudioUnlockTitle.textContent = "这份声音暂时没有打开";
+    if (giftAudioUnlockCopy) giftAudioUnlockCopy.textContent = "它仍安全地留在云端，稍后再试一次。";
+    setGiftAudioState("error", "Unable to open the private audio.");
+  }
 }
 
 function showPage(pageId) {
@@ -239,6 +387,7 @@ function showPage(pageId) {
     activateMemoriesPage(currentIdentity);
     window.setTimeout(queuePanoramaUpdate, 0);
   }
+  if (targetPageId === "gift-secret") loadGiftAudio();
 }
 
 async function unlock() {
@@ -471,7 +620,10 @@ async function initializeAuth() {
     if (authenticatedSession) await unlock();
     else showSignedOut();
   } catch (error) {
-    showSignedOut(error.message);
+    if (authenticatedSession) {
+      try { await repository.clearLocalSession(); } catch (cleanupError) { console.error("Invalid local session cleanup failed", cleanupError); }
+    }
+    showSignedOut(error.message === "NOT_SPACE_MEMBER" ? "" : error.message);
   } finally {
     setAuthBusy(false);
   }
@@ -552,6 +704,86 @@ returnLetterButton?.addEventListener("click", () => {
 returnHomeFromLetter?.addEventListener("click", () => {
   if (!canReturnToPrelude(currentIdentity, hasCompletedPrelude())) return;
   showMainSite(false);
+});
+
+giftAudioPlay?.addEventListener("click", async () => {
+  if (!giftAudio?.src) return;
+  if (giftAudio.paused) {
+    try {
+      await giftAudio.play();
+    } catch {
+      setGiftAudioState("error", "Playback could not start. Please try again.");
+    }
+  } else {
+    giftAudio.pause();
+  }
+});
+
+giftAudioRetry?.addEventListener("click", () => {
+  setGiftAudioState("loading", "Preparing your gift…");
+  loadGiftAudio();
+});
+
+giftAudioProgress?.addEventListener("input", () => {
+  if (!giftAudio || !Number.isFinite(giftAudio.duration)) return;
+  giftAudio.currentTime = Number(giftAudioProgress.value);
+});
+
+giftAudio?.addEventListener("loadedmetadata", () => {
+  const duration = Number.isFinite(giftAudio.duration) ? giftAudio.duration : 0;
+  giftAudioProgress.max = String(duration);
+  giftAudioProgress.disabled = duration <= 0;
+  giftAudioPlay.disabled = false;
+  giftAudioDuration.textContent = formatAudioTime(duration);
+});
+
+giftAudio?.addEventListener("canplay", () => {
+  window.clearTimeout(giftAudioSlowTimer);
+  const elapsed = giftAudioLoadStartedAt ? Math.round(performance.now() - giftAudioLoadStartedAt) : 0;
+  giftAudioExperience.dataset.loadMs = String(elapsed);
+  giftAudioExperience.dataset.audioSource = giftAudioSource?.source ?? "unknown";
+  if (giftAudioUnlockTitle) giftAudioUnlockTitle.textContent = "这份声音已经来到你身边";
+  if (giftAudioUnlockCopy) giftAudioUnlockCopy.textContent = "准备好时，按下播放。";
+  const revealDelay = Math.max(0, 900 - elapsed);
+  window.setTimeout(() => {
+    if (!giftAudio?.getAttribute("src")) return;
+    setGiftAudioState("ready", giftAudioSource?.source === "cache" ? "Ready from this device" : "Saved on this device");
+  }, revealDelay);
+});
+
+giftAudio?.addEventListener("timeupdate", () => {
+  const duration = Number.isFinite(giftAudio.duration) ? giftAudio.duration : 0;
+  const current = Number.isFinite(giftAudio.currentTime) ? giftAudio.currentTime : 0;
+  giftAudioCurrent.textContent = formatAudioTime(current);
+  giftAudioProgress.value = String(current);
+  giftAudioProgress.style.setProperty("--gift-audio-progress", `${duration ? (current / duration) * 100 : 0}%`);
+});
+
+giftAudio?.addEventListener("play", () => {
+  giftAudioExperience?.classList.add("is-playing");
+  giftAudioPlay.classList.add("is-playing");
+  giftAudioPlay.querySelector("span").textContent = "Ⅱ";
+  giftAudioPlay.setAttribute("aria-label", "Pause In Loving Memory");
+  giftAudioStatus.textContent = "Playing softly…";
+});
+
+giftAudio?.addEventListener("pause", () => {
+  giftAudioExperience?.classList.remove("is-playing");
+  giftAudioPlay.classList.remove("is-playing");
+  giftAudioPlay.querySelector("span").textContent = "▶";
+  giftAudioPlay.setAttribute("aria-label", "Play In Loving Memory");
+  if (giftAudio.currentTime > 0 && !giftAudio.ended) giftAudioStatus.textContent = "Paused · this moment will wait.";
+});
+
+giftAudio?.addEventListener("ended", () => {
+  giftAudioStatus.textContent = "Always here when you want to listen again.";
+});
+
+giftAudio?.addEventListener("error", () => {
+  if (!giftAudio.getAttribute("src")) return;
+  if (giftAudioUnlockTitle) giftAudioUnlockTitle.textContent = "这份声音暂时没有打开";
+  if (giftAudioUnlockCopy) giftAudioUnlockCopy.textContent = "它仍安全地留在云端，稍后再试一次。";
+  setGiftAudioState("error", "Unable to play the private audio.");
 });
 
 const planetPage = $("#planet");

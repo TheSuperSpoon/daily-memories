@@ -9,7 +9,11 @@ function harness(responses = {}) {
     auth: {}
   };
   const adapter = { upload: async (...args) => storageCalls.push(['upload', ...args]),
-    remove: async (...args) => storageCalls.push(['remove', ...args]) };
+    remove: async (...args) => storageCalls.push(['remove', ...args]),
+    getReadableUrl: async (...args) => {
+      storageCalls.push(['read', ...args]);
+      return { url: 'signed-audio', expiresAt: 123 };
+    } };
   return { repository: new GlimmerRepository({ supabase, storageFactory: { forAsset: () => adapter } }), calls, storageCalls };
 }
 
@@ -53,6 +57,16 @@ test('gift state is read and collected through role-bound RPCs', async () => {
     ['get_gift_icons_found', { p_space_id: 'space-1' }],
     ['collect_gift_icon', { p_space_id: 'space-1', p_gift_id: 'ticket' }]
   ]);
+});
+
+test('gift audio after the first find uses RPC metadata and a one-hour signed URL', async () => {
+  const asset = { provider: 'supabase', bucket: 'gifts', object_key: 'private/audio.mp3' };
+  const h = harness({ get_gift_audio: { data: { title: 'In Loving Memory', asset }, error: null } });
+  assert.deepEqual(await h.repository.getGiftAudio('space-1'), {
+    title: 'In Loving Memory', asset, url: 'signed-audio', expiresAt: 123
+  });
+  assert.deepEqual(h.calls, [['get_gift_audio', { p_space_id: 'space-1' }]]);
+  assert.deepEqual(h.storageCalls, [['read', asset, { expiresIn: 3600 }]]);
 });
 
 test('invalid glimmer timezone fails before RPC', async () => {

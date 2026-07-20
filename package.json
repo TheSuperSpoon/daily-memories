@@ -8,6 +8,7 @@
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
     "seed:mel-likes": "node scripts/seed-mel-likes.mjs",
+    "seed:gift-audio": "node scripts/seed-gift-audio.mjs",
     "launch:inventory": "node scripts/launch-readiness.mjs inventory",
     "launch:cleanup": "node scripts/launch-readiness.mjs cleanup",
     "launch:smoke-audit": "node scripts/smoke-residue.mjs",

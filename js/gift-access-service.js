@@ -9,3 +9,8 @@ export async function collectGiftForIdentity({ identity, spaceId, giftId, reposi
   if (!canAccessMelFeature(identity)) return null;
   return repository.collectGiftIcon(spaceId, giftId);
 }
+
+export async function loadGiftAudioForIdentity({ identity, foundAnyGift, spaceId, repository }) {
+  if (!canAccessMelFeature(identity) || !foundAnyGift) return null;
+  return repository.getGiftAudio(spaceId);
+}

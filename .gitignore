@@ -9,6 +9,7 @@ supabase/.branches/
 coverage/
 .tmp/
 test-results/
+In Loving Memory.MP3
 *.log
 daily-memories/
 .DS_Store

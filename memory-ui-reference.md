@@ -11,6 +11,8 @@ radius, borders, and shadows stay within the existing Memories visual system.
 | Beijing/West Coast selector | [shadcn Toggle Group](https://ui.shadcn.com/docs/components/base/toggle-group) | Single pressed item, equal-width choices, `aria-pressed`, state beyond color | Purple border plus filled lilac selected state and sun/moon glyph |
 | Voice-note player | [Dribbble Audio Player](https://dribbble.com/shots/27230198-Audio-Player-Mobile-App-UI-Design-Clean-Podcast-Streaming-UX) | Dominant circular play control, one progress rail, current/total time | Existing Memories gradient, purple action, muted body color |
 | Monthly timeline | [Dribbble Memory Recap](https://dribbble.com/shots/27152756-Memory-Recap-Social-Journal-App-UI-UX-Design) | Story-first monthly grouping, visual media cards, compact identity metadata | Existing vertical timeline, white cards, lilac page background |
+| Gift audio atmosphere | [Dribbble Meditation App UI](https://dribbble.com/shots/27004413-Meditation-App-UI-Design) | Calm audio focus, breathing feedback, soft-edged player card, low-friction primary control | Existing `#fffafd → #f3e7ff` page, lilac glow, restrained motion |
+| Gift desktop player | [Dribbble Minimal Desktop Music App](https://dribbble.com/shots/26854590-Minimal-Desktop-Music-App-Design) | Single dominant play action, generous desktop spacing, compact track hierarchy and progress rail | Existing purple action gradient, white translucent card and 26px radius |
 
 Accessibility is part of the reused patterns: keyboard-operable actions, labelled
 icon buttons, visible focus, error text in addition to color, and a stacked mobile

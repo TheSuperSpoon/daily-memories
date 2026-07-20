@@ -674,9 +674,52 @@
         <section id="gift-secret" class="page gift-secret-page">
           <section class="gift-secret-panel">
             <span class="purple-tape tape-two" aria-hidden="true"></span>
-            <p class="eyebrow">Secret page</p>
-            <h2>🎁 You found them all</h2>
-            <p>这里先放一个隐藏礼物占位。之后可以把你录的歌、语音、或者一段只给 Mel 的小页面放进来。</p>
+            <div class="gift-audio-heading">
+              <p class="eyebrow">A gift kept in sound</p>
+              <span class="gift-dedication">For Mel</span>
+              <h2>In Loving Memory</h2>
+              <p>有些想念会留在声音里。慢慢听，让它轻轻陪你走过这一段时光。</p>
+            </div>
+
+            <div id="giftAudioExperience" class="gift-audio-experience is-loading" aria-live="polite">
+              <div id="giftAudioUnlock" class="gift-audio-unlock">
+                <div class="gift-unlock-orbit" aria-hidden="true">
+                  <span class="gift-unlock-heart">♥</span>
+                  <i></i><i></i><i></i>
+                </div>
+                <strong id="giftAudioUnlockTitle">正在打开这份礼物</strong>
+                <span id="giftAudioUnlockCopy">把藏在云端的声音，轻轻带到你身边…</span>
+              </div>
+
+              <div class="gift-audio-player">
+                <div class="gift-audio-player-top">
+                  <button id="giftAudioPlay" class="gift-audio-play" type="button" aria-label="Play In Loving Memory" disabled>
+                    <span aria-hidden="true">▶</span>
+                  </button>
+                  <div class="gift-audio-track-copy">
+                    <span>PRIVATE AUDIO LETTER</span>
+                    <strong>In Loving Memory</strong>
+                    <small>Only for you · a private keepsake</small>
+                  </div>
+                  <div class="gift-audio-wave" aria-hidden="true">
+                    <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+                  </div>
+                </div>
+                <audio id="giftAudio" preload="metadata">Your browser does not support audio playback.</audio>
+                <label class="gift-audio-progress-wrap">
+                  <span class="visually-hidden">Playback position</span>
+                  <input id="giftAudioProgress" class="gift-audio-progress" type="range" min="0" max="0" step="0.1" value="0" disabled />
+                </label>
+                <div class="gift-audio-time-row">
+                  <time id="giftAudioCurrent">0:00</time>
+                  <span id="giftAudioStatus">Preparing your gift…</span>
+                  <time id="giftAudioDuration">--:--</time>
+                </div>
+                <button id="giftAudioRetry" class="gift-audio-retry hidden" type="button">Try opening the gift again</button>
+              </div>
+            </div>
+
+            <p class="gift-audio-footnote"><span aria-hidden="true">✦</span> Keep this moment unhurried.</p>
           </section>
         </section>
 
@@ -685,6 +728,6 @@
     </main>
 
     <script src="./config.js?v=20260720-launch"></script>
-    <script type="module" src="./script.js?v=20260720-login-timezone"></script>
+    <script type="module" src="./script.js?v=20260721-gift-audio"></script>
   </body>
 </html>

@@ -26,6 +26,9 @@ async function count(table, configure = (query) => query) {
 const members = await rows('space_members', 'user_id,role', (query) => query.eq('space_id', spaceId));
 const memberByRole = Object.fromEntries(members.map((member) => [member.role, member]));
 const slots = await rows('registration_slots', 'role,state,user_id,claimed_at', (query) => query.order('slot'));
+const melGiftProgress = await rows('gift_progress', 'gift_icons_found', (query) =>
+  query.eq('space_id', spaceId).eq('role', 'mel'));
+const melGiftIcons = melGiftProgress[0]?.gift_icons_found ?? {};
 const inventory = {
   memberRoles: members.map(({ role }) => role).sort(),
   slots: Object.fromEntries(slots.map(({ role, state }) => [role, state])),
@@ -34,6 +37,7 @@ const inventory = {
   memories: await count('memories', (query) => query.eq('space_id', spaceId)),
   melLikes: await count('mel_likes', (query) => query.eq('space_id', spaceId)),
   memoryTags: await count('memory_tags', (query) => query.eq('space_id', spaceId)),
+  melGiftFound: Object.values(melGiftIcons).filter(Boolean).length,
 };
 
 if (mode === 'inventory') {
@@ -50,16 +54,22 @@ const glimmers = await rows('glimmers', 'id,owner_id,glimmer_date,glimmer_assets
   query.eq('space_id', spaceId).or(`owner_id.eq.${melId},glimmer_date.lt.${boundary}`));
 const memories = await rows('memories', 'id,memory_assets(bucket,object_key)', (query) =>
   query.eq('space_id', spaceId).eq('owner_id', melId));
-const likes = await rows('mel_likes', 'id,position,owner_id,mel_like_assets(bucket,object_key)', (query) =>
-  query.eq('space_id', spaceId).eq('owner_id', melId));
-const seededLikes = likes.filter(({ id, position, mel_like_assets: likeAssets = [] }) =>
+const deletedMemories = await rows('memories', 'id,body,deleted_at,memory_assets(bucket,object_key)', (query) =>
+  query.eq('space_id', spaceId).not('deleted_at', 'is', null));
+const testHistoryMemories = deletedMemories.filter(({ body }) =>
+  /^(QA random (audio|image) |launch-ui-memory-ray-)/i.test(body ?? ''));
+const allLikes = await rows('mel_likes', 'id,position,owner_id,mel_like_assets(bucket,object_key)', (query) =>
+  query.eq('space_id', spaceId));
+const melLikes = allLikes.filter(({ owner_id }) => owner_id === melId);
+const seededLikes = allLikes.filter(({ id, position, mel_like_assets: likeAssets = [] }) =>
   position >= 1 && position <= 9 && id.startsWith('61000000-0000-0000-0000-')
     && likeAssets.some(({ object_key }) => object_key?.includes('/mel-likes/seed/')));
-const likesToDelete = likes.filter(({ id }) => !seededLikes.some((seeded) => seeded.id === id));
+const likesToDelete = melLikes.filter(({ id }) => !seededLikes.some((seeded) => seeded.id === id));
 
 const assets = [
   ...glimmers.flatMap(({ glimmer_assets = [] }) => glimmer_assets),
   ...memories.flatMap(({ memory_assets = [] }) => memory_assets),
+  ...testHistoryMemories.flatMap(({ memory_assets = [] }) => memory_assets),
   ...likesToDelete.flatMap(({ mel_like_assets = [] }) => mel_like_assets),
 ].filter(({ bucket, object_key }) => bucket && object_key);
 
@@ -72,11 +82,17 @@ for (const bucket of new Set(assets.map(({ bucket: value }) => value))) {
 
 let response = await admin.from('glimmers').delete().eq('space_id', spaceId).lt('glimmer_date', boundary);
 if (response.error) throw response.error;
+if (testHistoryMemories.length) {
+  response = await admin.from('memories').delete().in('id', testHistoryMemories.map(({ id }) => id));
+  if (response.error) throw response.error;
+}
 assert.equal(seededLikes.length, 9, 'all nine seeded Mel likes must be preserved');
 response = await admin.from('mel_likes').update({ owner_id: memberByRole.ray.user_id, role: 'ray' })
   .in('id', seededLikes.map(({ id }) => id));
 if (response.error) throw response.error;
 response = await admin.from('reward_ledger').delete().eq('space_id', spaceId).eq('actor_id', melId);
+if (response.error) throw response.error;
+response = await admin.from('gift_progress').update({ gift_icons_found: {} }).eq('space_id', spaceId).eq('role', 'mel');
 if (response.error) throw response.error;
 response = await admin.from('registration_slots').update({ state: 'open', user_id: null, claimed_at: null }).eq('role', 'mel').eq('user_id', melId);
 if (response.error) throw response.error;
@@ -107,6 +123,11 @@ const verification = {
   seededLikesOwnedByRay: await count('mel_likes', (query) => query.eq('space_id', spaceId)
     .eq('owner_id', memberByRole.ray.user_id).gte('position', 1).lte('position', 9)),
   removedOrphanTags: orphanTagIds.length,
+  testHistoryMemories: await count('memories', (query) => query.eq('space_id', spaceId)
+    .or('body.like.QA random audio %,body.like.QA random image %,body.like.launch-ui-memory-ray-%')),
+  memoryTags: await count('memory_tags', (query) => query.eq('space_id', spaceId)),
+  melGiftFound: Object.values((await rows('gift_progress', 'gift_icons_found', (query) =>
+    query.eq('space_id', spaceId).eq('role', 'mel')))[0]?.gift_icons_found ?? {}).filter(Boolean).length,
 };
 
 assert.deepEqual(verification.memberRoles, ['ray']);
@@ -117,5 +138,8 @@ assert.equal(verification.melOwnedGlimmers, 0);
 assert.equal(verification.melOwnedMemories, 0);
 assert.equal(verification.melOwnedLikes, 0);
 assert.equal(verification.seededLikesOwnedByRay, 9);
+assert.equal(verification.testHistoryMemories, 0);
+assert.equal(verification.memoryTags, 0);
+assert.equal(verification.melGiftFound, 0);
 
 console.log(JSON.stringify({ passed: true, mode, boundary, removedAssets: assets.length, verification }));

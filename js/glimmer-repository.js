@@ -23,6 +23,11 @@ export class GlimmerRepository {
     if (error) throw this.#error(error);
   }
 
+  async clearLocalSession() {
+    const { error } = await this.supabase.auth.signOut({ scope: 'local' });
+    if (error) throw this.#error(error);
+  }
+
   async resetPassword(email, redirectTo) {
     const { error } = await this.supabase.auth.resetPasswordForEmail(email, { redirectTo });
     if (error) throw this.#error(error);
@@ -123,6 +128,14 @@ export class GlimmerRepository {
     return data ?? {};
   }
 
+  async getGiftAudio(spaceId) {
+    const { data, error } = await this.supabase.rpc('get_gift_audio', { p_space_id: spaceId });
+    if (error) throw this.#error(error);
+    if (!data?.asset) throw Object.assign(new Error('Gift audio is not available yet.'), { code: 'GIFT_AUDIO_NOT_FOUND' });
+    const readable = await this.storageFactory.forAsset(data.asset).getReadableUrl(data.asset, { expiresIn: 3600 });
+    return { ...data, ...readable };
+  }
+
   async completeRetroGlimmer(spaceId, targetDate) {
     const { data, error } = await this.supabase.rpc('complete_retro_glimmer', {
       p_space_id: spaceId, p_target_date: targetDate
@@ -167,7 +180,8 @@ export class GlimmerRepository {
       return Object.assign(new Error('Network unavailable. Try again.'), { code: 'NETWORK_ERROR', ...details });
     }
     const knownCode = ['REGISTRATION_LIMIT_REACHED', 'DAILY_GLIMMER_EXISTS', 'DELETE_WINDOW_EXPIRED',
-      'INSUFFICIENT_REWARD_BALANCE', 'FEATURE_FORBIDDEN', 'PROFILE_NOT_FOUND', 'INVALID_GIFT_ID']
+      'INSUFFICIENT_REWARD_BALANCE', 'FEATURE_FORBIDDEN', 'PROFILE_NOT_FOUND', 'INVALID_GIFT_ID',
+      'GIFT_AUDIO_LOCKED', 'GIFT_AUDIO_NOT_FOUND']
       .find((code) => message.includes(code));
     return Object.assign(new Error(message), { code: knownCode ?? 'BACKEND_ERROR', ...details });
   }
