@@ -1,11 +1,11 @@
-import { appConfig, repository } from "./js/app-services.js";
+import { appConfig, repository } from "./js/app-services.js?v=20260720-login-timezone";
 import {
   activateGalleryPage,
   activateGlimmerPage,
   getGlimmerIdentity,
   initializeGlimmerSession,
   resetGlimmerSession,
-} from "./js/glimmer-controller.js";
+} from "./js/glimmer-controller.js?v=20260720-login-timezone";
 import {
   canAccessGiftPage,
   canAccessMelFeature,
@@ -14,6 +14,8 @@ import {
   shouldShowPrelude,
 } from "./js/feature-access.js";
 import { collectGiftForIdentity, loadGiftStateForIdentity } from "./js/gift-access-service.js";
+import { activateMemoriesPage, resetMemorySession } from "./js/memory-controller.js?v=20260720-login-timezone";
+import { timePresentation } from "./js/memory-model.js?v=20260720-login-timezone";
 
 const CONFIG = {
   birthday: "2026-07-20T00:00:00",
@@ -29,51 +31,6 @@ const GIFT_ICON_CONFIG = [
 ];
 
 const GIFT_ICON_IDS = GIFT_ICON_CONFIG.map((gift) => gift.id);
-
-const memories = [
-  {
-    date: "Memory 01",
-    title: "The first photo goes here",
-    image: "",
-    copy: "Drop in the photo that feels like the beginning, then replace this with the tiny detail you still remember.",
-    tags: ["first photo", "soft launch"],
-  },
-  {
-    date: "Memory 02",
-    title: "First date / first real hang",
-    image: "",
-    copy: "Add the place, what she wore, what you were nervous about, or the exact moment it felt different.",
-    tags: ["first date", "purple lights"],
-  },
-  {
-    date: "Memory 03",
-    title: "Band room moment",
-    image: "",
-    copy: "Singer and drummer energy. This can hold a rehearsal photo, a stage clip, or a line about how her voice changes the room.",
-    tags: ["rock band", "singer", "drummer"],
-  },
-  {
-    date: "Memory 04",
-    title: "Cute chat screenshot",
-    image: "",
-    copy: "Put one of those messages here that looks small to everyone else but means a whole world to you.",
-    tags: ["chat", "inside joke"],
-  },
-  {
-    date: "Memory 05",
-    title: "Her universe",
-    image: "",
-    copy: "A nod to violet chaos, sharp aim, complicated heroines, and the songs that sound like her moodboard.",
-    tags: ["Jinx vibe", "Iso mood", "Halsey"],
-  },
-  {
-    date: "Memory 06",
-    title: "The birthday promise",
-    image: "",
-    copy: "End the scroll with what you want the next year to feel like together.",
-    tags: ["July 20", "next chapter"],
-  },
-];
 
 const $ = (selector) => document.querySelector(selector);
 const gate = $("#gate");
@@ -111,6 +68,9 @@ const giftButtons = GIFT_ICON_CONFIG.flatMap((gift) => [...document.querySelecto
 const giftToast = $("#giftToast");
 const secretGiftNav = $("#secretGiftNav");
 const galleryTodayDate = $("#galleryTodayDate");
+const loginTimezoneButtons = [...document.querySelectorAll("[data-login-timezone]")];
+const TIMEZONE_PREFERENCE_KEY = "memory-preferred-timezone";
+const SUPPORTED_TIMEZONES = ["Asia/Shanghai", "America/Los_Angeles"];
 
 // The ticket is opened from both the prelude and the main site. Keep its fixed
 // overlay outside either visibility container so both entry points can show it.
@@ -125,6 +85,33 @@ let currentIdentity = null;
 let giftIconsFound = Object.fromEntries(GIFT_ICON_IDS.map((id) => [id, false]));
 let giftStateReady = false;
 let giftToastTimer;
+let selectedLoginTimezone = localStorage.getItem(TIMEZONE_PREFERENCE_KEY) || "Asia/Shanghai";
+let loginTimezoneTimer;
+
+if (!SUPPORTED_TIMEZONES.includes(selectedLoginTimezone)) selectedLoginTimezone = "Asia/Shanghai";
+
+function timezoneName(timezone) {
+  return timezone === "Asia/Shanghai" ? "Beijing" : "US West Coast";
+}
+
+function updateLoginTimezoneButtons() {
+  const now = new Date();
+  loginTimezoneButtons.forEach((button) => {
+    const timezone = button.dataset.loginTimezone;
+    const presentation = timePresentation(now, timezone);
+    const selected = timezone === selectedLoginTimezone;
+    button.setAttribute("aria-pressed", String(selected));
+    button.setAttribute("aria-label", `${timezoneName(timezone)}, ${presentation.time}${selected ? ", selected" : ""}`);
+    button.replaceChildren();
+    const icon = document.createElement("span");
+    icon.className = "auth-timezone-icon";
+    icon.textContent = presentation.icon;
+    const time = document.createElement("time");
+    time.textContent = presentation.time;
+    button.append(icon, time);
+  });
+  if (galleryTodayDate) galleryTodayDate.textContent = timePresentation(now, selectedLoginTimezone).date.replaceAll(".", ".");
+}
 
 function preludeStorageKey() {
   return authenticatedSession?.user?.id
@@ -249,6 +236,7 @@ function showPage(pageId) {
     activateGalleryPage();
   }
   if (targetPageId === "memories") {
+    activateMemoriesPage(currentIdentity);
     window.setTimeout(queuePanoramaUpdate, 0);
   }
 }
@@ -342,17 +330,17 @@ function completePrelude() {
 }
 
 syncCompletedControls();
-if (galleryTodayDate) {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = String(today.getMonth() + 1).padStart(2, "0");
-  const day = String(today.getDate()).padStart(2, "0");
-  galleryTodayDate.textContent = `${year}.${month}.${day}`;
-}
+updateLoginTimezoneButtons();
+loginTimezoneTimer = window.setInterval(updateLoginTimezoneButtons, 30000);
 
 function setAuthMode(mode) {
   authMode = mode;
   const registering = mode === "register";
+  if (registering) {
+    authEmail.value = "";
+    authPassword.value = "";
+    authConfirmPassword.value = "";
+  }
   showLoginModeButton.classList.toggle("is-active", !registering);
   showRegisterModeButton.classList.toggle("is-active", registering);
   showLoginModeButton.setAttribute("aria-selected", String(!registering));
@@ -381,6 +369,7 @@ function showSignedOut(message = "") {
   authenticatedSession = null;
   currentIdentity = null;
   resetGlimmerSession();
+  resetMemorySession();
   resetGiftState();
   resetPrelude();
   showPage("home");
@@ -393,6 +382,9 @@ function showSignedOut(message = "") {
   authPassword.value = "";
   authConfirmPassword.value = "";
   authMessage.textContent = message;
+  selectedLoginTimezone = localStorage.getItem(TIMEZONE_PREFERENCE_KEY) || "Asia/Shanghai";
+  if (!SUPPORTED_TIMEZONES.includes(selectedLoginTimezone)) selectedLoginTimezone = "Asia/Shanghai";
+  updateLoginTimezoneButtons();
   authEmail.focus();
   syncCompletedControls();
 }
@@ -425,6 +417,11 @@ async function handleAuthSubmit(event) {
 
 showLoginModeButton.addEventListener("click", () => setAuthMode("login"));
 showRegisterModeButton.addEventListener("click", () => setAuthMode("register"));
+loginTimezoneButtons.forEach((button) => button.addEventListener("click", () => {
+  selectedLoginTimezone = button.dataset.loginTimezone;
+  localStorage.setItem(TIMEZONE_PREFERENCE_KEY, selectedLoginTimezone);
+  updateLoginTimezoneButtons();
+}));
 authForm.addEventListener("submit", handleAuthSubmit);
 forgotPasswordButton.addEventListener("click", async () => {
   const email = authEmail.value.trim();
@@ -466,7 +463,11 @@ setAuthMode("login");
 async function initializeAuth() {
   setAuthBusy(true, "Restoring session...");
   try {
-    authenticatedSession = await repository.getSession();
+    const urlSession = await repository.consumeSessionFromUrl();
+    if (urlSession && window.location.hash) {
+      window.history.replaceState(null, document.title, `${window.location.pathname}${window.location.search}`);
+    }
+    authenticatedSession = urlSession || await repository.getSession();
     if (authenticatedSession) await unlock();
     else showSignedOut();
   } catch (error) {
@@ -641,40 +642,6 @@ window.addEventListener("resize", () => {
   if (planetPage?.classList.contains("is-active")) seedPlanetParticles(planetParticles.length || 140);
 });
 
-const timeline = $("#timeline");
-
-memories.forEach((memory) => {
-  const item = document.createElement("article");
-  item.className = "memory";
-  const media = memory.image
-    ? `<img class="memory-photo" src="${memory.image}" alt="${memory.title}" />`
-    : "Photo / voice note / screenshot";
-  item.innerHTML = `
-    <div class="memory-dot" aria-hidden="true"></div>
-    <div class="memory-card">
-      <div class="memory-art">${media}</div>
-      <div>
-        <time>${memory.date}</time>
-        <h3>${memory.title}</h3>
-        <p>${memory.copy}</p>
-        <div class="tag-row">${memory.tags.map((tag) => `<span>${tag}</span>`).join("")}</div>
-      </div>
-    </div>
-  `;
-  timeline.appendChild(item);
-});
-
-const memoryObserver = new IntersectionObserver(
-  (entries) => {
-    entries.forEach((entry) => {
-      if (entry.isIntersecting) entry.target.classList.add("is-lit");
-    });
-  },
-  { threshold: 0.38 }
-);
-
-document.querySelectorAll(".memory").forEach((item) => memoryObserver.observe(item));
-
 const revealObserver = new IntersectionObserver(
   (entries) => {
     entries.forEach((entry) => {
@@ -703,10 +670,16 @@ const revealObserver = new IntersectionObserver(
 
 document.querySelectorAll(".reveal-card").forEach((item) => revealObserver.observe(item));
 
-const panoramaFrames = [...document.querySelectorAll(".panorama-frame")];
+let panoramaFrames = [...document.querySelectorAll(".panorama-frame")];
 const panoramaSequence = $(".panorama-sequence");
 let activePanoramaPanel = null;
 let panoramaTicking = false;
+
+window.addEventListener("memories-panorama-updated", () => {
+  panoramaFrames = [...document.querySelectorAll(".panorama-frame")];
+  activePanoramaPanel = null;
+  queuePanoramaUpdate();
+});
 
 function setPanoramaPanel(panel) {
   if (panel === activePanoramaPanel) return;

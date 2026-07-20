@@ -34,16 +34,32 @@ export class GlimmerRepository {
     return data.session;
   }
 
+  async consumeSessionFromUrl(url = window.location.href) {
+    const hash = new URL(url).hash.slice(1);
+    if (!hash) return null;
+    const params = new URLSearchParams(hash);
+    const accessToken = params.get('access_token');
+    const refreshToken = params.get('refresh_token');
+    if (!accessToken || !refreshToken) return null;
+    const { data, error } = await this.supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
+    });
+    if (error) throw this.#error(error);
+    return data.session;
+  }
+
   onAuthStateChange(callback) {
     return this.supabase.auth.onAuthStateChange(callback).data.subscription;
   }
 
-  async uploadGlimmer({ spaceId, date, note = '', mood = null, file, onProgress }) {
+  async uploadGlimmer({ spaceId, date, note = '', mood = null, preferredTimezone = 'Asia/Shanghai', file, onProgress }) {
     this.#validateFile(file);
     this.#validateMood(mood);
+    this.#validateTimezone(preferredTimezone);
     const { data: begin, error: beginError } = await this.supabase.rpc('begin_glimmer_upload', {
       p_space_id: spaceId, p_date: date, p_content_type: file.type,
-      p_size_bytes: file.size, p_note: note, p_mood: mood
+      p_size_bytes: file.size, p_note: note, p_mood: mood, p_preferred_timezone: preferredTimezone
     });
     if (beginError) throw this.#error(beginError);
     const adapter = this.storageFactory.forAsset(begin.asset);
@@ -130,6 +146,12 @@ export class GlimmerRepository {
     }
   }
 
+  #validateTimezone(timezone) {
+    if (!['Asia/Shanghai', 'America/Los_Angeles'].includes(timezone)) {
+      throw Object.assign(new Error('Choose Beijing or West Coast time.'), { code: 'INVALID_TIMEZONE' });
+    }
+  }
+
   #validateGiftId(giftId) {
     if (!['home', 'lighthouse', 'gallery', 'playlist', 'ticket'].includes(giftId)) {
       throw Object.assign(new Error('Unknown hidden gift.'), { code: 'INVALID_GIFT_ID' });
@@ -150,8 +172,9 @@ export class GlimmerRepository {
     return Object.assign(new Error(message), { code: knownCode ?? 'BACKEND_ERROR', ...details });
   }
 
-  async getDashboard(spaceId) {
-    const { data, error } = await this.supabase.rpc('get_glimmer_dashboard', { p_space_id: spaceId });
+  async getDashboard(spaceId, timezone = 'Asia/Shanghai') {
+    this.#validateTimezone(timezone);
+    const { data, error } = await this.supabase.rpc('get_glimmer_dashboard', { p_space_id: spaceId, p_timezone: timezone });
     if (error) throw this.#error(error);
     return data;
   }

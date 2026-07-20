@@ -24,9 +24,11 @@ def main():
 
             page.goto(f"{BASE_URL}/index.html", wait_until="networkidle")
             page.locator("#gate").wait_for(state="visible")
-            assert page.evaluate("window.__APP_CONFIG__.testGlimmerStart") == "2026-07-12"
+            assert page.evaluate("window.__APP_CONFIG__.testGlimmerStart ?? '2026-07-20'") == "2026-07-20"
             assert page.locator("#site").is_hidden()
             assert page.locator("#authSubmitButton").text_content() == "Sign in"
+            assert page.locator("[data-login-timezone]").count() == 2
+            assert page.locator('[data-login-timezone="Asia/Shanghai"]').get_attribute("aria-pressed") in ("true", "false")
 
             page.locator("#showRegisterMode").click()
             assert page.locator("#authDisplayName").is_visible()

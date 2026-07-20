@@ -1,8 +1,9 @@
-import { appConfig, repository } from "./app-services.js";
+import { appConfig, repository } from "./app-services.js?v=20260720-glimmer-timezones";
 import { canDeleteAt, indexMonth, LatestRequest, moodDraftValue, monthKey, monthRange } from "./glimmer-model.js";
 import { canAccessMelFeature, canOpenStats } from "./feature-access.js";
 import { calculateRelationshipStats } from "./glimmer-stats.js";
 import { BASE_CAPTION_STOP_WORDS } from "./text-tokenizer.js";
+import { timePresentation } from "./memory-model.js?v=20260720-glimmer-timezones";
 
 export { monthKey, monthRange } from "./glimmer-model.js";
 
@@ -51,7 +52,9 @@ const elements = {
   uploadModal: $("#uploadModal"),
   uploadForm: $("#uploadForm"),
   uploadDate: $("#uploadDateLabel"),
+  choosePhoto: $("#chooseGlimmerPhoto"),
   photoInput: $("#photoInput"),
+  photoSummary: $("#glimmerPhotoSummary"),
   photoNote: $("#photoNote"),
   uploadSubmit: $("#uploadSubmitButton"),
   uploadStatus: $("#uploadStatus"),
@@ -75,6 +78,7 @@ let galleryMonth = new Date();
 let activeDate = CONFIG.glimmerStart;
 let selectedUploadDate = activeDate;
 let selectedUploadMood = null;
+let selectedUploadTimezone = "Asia/Shanghai";
 let retroMode = false;
 let initialized = false;
 let initializing = null;
@@ -92,6 +96,11 @@ const moodOptions = {
   tired: "😴",
   loved: "🥰",
 };
+
+function preferredTimezone() {
+  const timezone = localStorage.getItem("memory-preferred-timezone") || "Asia/Shanghai";
+  return ["Asia/Shanghai", "America/Los_Angeles"].includes(timezone) ? timezone : "Asia/Shanghai";
+}
 
 const imageObserver = typeof IntersectionObserver === "function"
   ? new IntersectionObserver((entries) => {
@@ -263,6 +272,36 @@ function appendDeleteButton(container, glimmer) {
   container.appendChild(button);
 }
 
+function createGlimmerTimeChip(glimmer, timezone, label) {
+  const time = timePresentation(glimmer.created_at, timezone);
+  const preferred = (glimmer.preferred_timezone || "Asia/Shanghai") === timezone;
+  const chip = document.createElement("span");
+  chip.className = `glimmer-time-chip${preferred ? " is-preferred" : ""}`;
+  if (preferred) chip.setAttribute("aria-label", `${label}, selected upload timezone`);
+  const icon = document.createElement("span");
+  icon.className = "glimmer-time-icon";
+  icon.textContent = time.icon;
+  const copy = document.createElement("span");
+  const title = document.createElement("strong");
+  title.textContent = `${label} · ${time.time}`;
+  const date = document.createElement("small");
+  date.textContent = time.date;
+  copy.append(title, date);
+  chip.append(icon, copy);
+  return chip;
+}
+
+function createGlimmerDualTime(glimmer, overlay = false) {
+  const shell = document.createElement("section");
+  shell.className = `glimmer-dual-time${overlay ? " is-overlay" : ""}`;
+  shell.setAttribute("aria-label", "Upload time in Beijing and US West Coast");
+  shell.append(
+    createGlimmerTimeChip(glimmer, "Asia/Shanghai", "Beijing"),
+    createGlimmerTimeChip(glimmer, "America/Los_Angeles", "West Coast"),
+  );
+  return shell;
+}
+
 function renderUploadPreview(container, glimmer, emptyText) {
   if (!container) return;
   container.replaceChildren();
@@ -274,6 +313,7 @@ function renderUploadPreview(container, glimmer, emptyText) {
     return;
   }
   container.appendChild(createLazyImage(glimmer, emptyText, true));
+  container.appendChild(createGlimmerDualTime(glimmer, true));
   const note = document.createElement("small");
   const moodPrefix = glimmer.mood && moodOptions[glimmer.mood] ? `${moodOptions[glimmer.mood]} ` : "";
   note.textContent = `${moodPrefix}${glimmer.note || "今天的微光"}`;
@@ -360,7 +400,7 @@ function renderCalendar() {
   setText(elements.progress, `${completed}/${eligible}`);
   setText(elements.calendarHint, retroMode
     ? "补签模式：选择一个过去缺失的日期。"
-    : `${CONFIG.glimmerStart.slice(5).replace("-", "/")} 起，每天按 Asia/Shanghai 时间解锁一个格子。`);
+    : `${CONFIG.glimmerStart.slice(5).replace("-", "/")} 起，每天按登录时选择的时间解锁一个格子。`);
   elements.calendarGrid.replaceChildren();
 
   for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber += 1) {
@@ -447,7 +487,13 @@ function openUploadModal(key, role = dashboard?.role) {
   selectedUploadDate = key;
   const day = currentMonthData(monthFromDateKey(key)).days[key] ?? {};
   selectedUploadMood = moodFor(key, role, day[role]);
+  selectedUploadTimezone = localStorage.getItem("memory-preferred-timezone") || "Asia/Shanghai";
+  if (!["Asia/Shanghai", "America/Los_Angeles"].includes(selectedUploadTimezone)) {
+    selectedUploadTimezone = "Asia/Shanghai";
+  }
   elements.uploadForm.reset();
+  setText(elements.photoSummary, "JPEG、PNG、WebP 或 GIF");
+  elements.choosePhoto?.classList.remove("has-file");
   setText(elements.uploadDate, key);
   setText(elements.uploadStatus, "");
   elements.retryFinalize.classList.add("hidden");
@@ -502,7 +548,7 @@ async function openStatsModal() {
 }
 
 async function refreshDashboard() {
-  dashboard = await repository.getDashboard(appConfig.spaceId);
+  dashboard = await repository.getDashboard(appConfig.spaceId, preferredTimezone());
   dashboardClockOffset = new Date(dashboard.server_now).getTime() - Date.now();
   syncStatsAccess();
 }
@@ -545,11 +591,13 @@ async function handleUpload(event) {
       date: selectedUploadDate,
       note: elements.photoNote.value.trim(),
       mood: selectedUploadMood,
+      preferredTimezone: selectedUploadTimezone,
       file,
       onProgress: ({ phase }) => setText(elements.uploadStatus, phase === "uploading" ? "Uploading private image..." : "Confirming upload..."),
     });
     if (generation !== sessionGeneration) return;
     setText(elements.uploadStatus, "Saved.");
+    localStorage.setItem("memory-preferred-timezone", selectedUploadTimezone);
     await afterMutation(selectedUploadDate);
     closeModals();
     if (isCompleteDay(currentMonthData(monthFromDateKey(selectedUploadDate)).days[selectedUploadDate])) {
@@ -651,7 +699,7 @@ async function renderGallery(force = false) {
       title.textContent = `${item.glimmer_date} · ${item.role === "ray" ? "Ray" : "Mel"}`;
       const note = document.createElement("p");
       note.textContent = item.note || "No note yet.";
-      body.append(title, note);
+      body.append(title, createGlimmerDualTime(item), note);
       appendDeleteButton(body, item);
       card.appendChild(body);
       elements.gallery.appendChild(card);
@@ -674,7 +722,7 @@ export async function initializeGlimmerSession() {
   if (initializing) return initializing;
   const generation = sessionGeneration;
   const task = (async () => {
-    dashboard = await repository.getDashboard(appConfig.spaceId);
+    dashboard = await repository.getDashboard(appConfig.spaceId, preferredTimezone());
     if (generation !== sessionGeneration) return;
     dashboardClockOffset = new Date(dashboard.server_now).getTime() - Date.now();
     activeDate = dashboard.local_today >= CONFIG.glimmerStart ? dashboard.local_today : CONFIG.glimmerStart;
@@ -746,6 +794,12 @@ elements.galleryPrev?.addEventListener("click", () => setGalleryMonth(-1));
 elements.galleryNext?.addEventListener("click", () => setGalleryMonth(1));
 elements.galleryRetry?.addEventListener("click", () => renderGallery(true));
 elements.uploadForm?.addEventListener("submit", handleUpload);
+elements.choosePhoto?.addEventListener("click", () => elements.photoInput?.click());
+elements.photoInput?.addEventListener("change", () => {
+  const file = elements.photoInput.files?.[0];
+  setText(elements.photoSummary, file ? file.name : "JPEG、PNG、WebP 或 GIF");
+  elements.choosePhoto?.classList.toggle("has-file", Boolean(file));
+});
 elements.retryFinalize?.addEventListener("click", retryFinalize);
 elements.moodPickers.forEach((picker) => {
   picker.querySelectorAll("[data-mood]").forEach((button) => {

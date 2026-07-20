@@ -7,6 +7,8 @@ node_modules/
 supabase/.temp/
 supabase/.branches/
 coverage/
+.tmp/
+test-results/
 *.log
 daily-memories/
 .DS_Store

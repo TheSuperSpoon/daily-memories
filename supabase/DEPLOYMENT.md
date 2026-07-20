@@ -83,3 +83,21 @@ service; its low hourly rate is accepted for this two-user application. Repeat t
 browser smoke once against the eventual production origin.
 
 No service-role or secret API key is required by the browser workflow.
+
+## Memories multimedia rollout (2026-07-20)
+
+- Applied `202607200001_memories_multimedia.sql` to the linked project and verified remote schema lint with no issues.
+- The private `memories` bucket separates `records/` and `mel-likes/`; browsers receive only short-lived signed URLs.
+- Seeded and verified the nine original Mel-likes images in their existing order and captions.
+- Remote pgTAP completed 25/25 checks for membership, server-bound roles, upload lifecycle, media limits, private-object policies, popular tags, daylight-saving dates, and 24-hour owner deletion.
+- The online smoke test uploads a random PNG and WAV, verifies both member reads and signed media, adds a temporary tenth Mel-like, and removes every temporary record and object.
+
+## Launch cleanup and login timezone rollout (2026-07-20)
+
+- Applied `202607200003_glimmer_launch_boundary.sql`, `202607200004_login_timezone_unlock.sql`, and `202607200005_glimmer_accounted_timezone.sql`; remote migration history matches local through `202607200005`.
+- The login page is the only timezone selector. The chosen Beijing or US West Coast timezone is passed to `get_glimmer_dashboard` and `begin_glimmer_upload`, so `local_today` and upload unlock validation use the same clock while dates before 2026-07-20 remain rejected.
+- Timeline accounting uses each glimmer's saved preferred timezone, preventing West Coast uploads from disappearing after Beijing crosses midnight.
+- Final dual-account API smoke verified four mutual glimmer reads, four peer signed-image reads, two timezone dashboards, server-bound roles, moods, cross-owner delete rejection, Mel-only gift access, and automatic cleanup.
+- Browser QA sequentially used the real Ray and Mel sessions to verify mutual glimmer/Gallery rendering, image and audio Memories, audio playback, historical popular-tag selection, dual-time highlighting, role labels, Mel likes, and owner-only deletion.
+- Launch cleanup deleted the Mel Auth user and its personal records, reopened the Mel registration slot, removed all glimmers before 2026-07-20, removed four private assets and five orphan tags, and reassigned the nine deterministic seeded Mel-likes records to Ray so the official sequence remains intact.
+- Post-cleanup inventory: one Ray member, Ray slot `claimed`, Mel slot `open`, zero glimmers, zero pre-boundary glimmers, nine Mel likes, and zero prefixed smoke records/assets. Remote schema lint returned no warnings or errors.

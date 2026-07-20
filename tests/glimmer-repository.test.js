@@ -18,10 +18,11 @@ test('upload follows begin, adapter, finalize contract', async () => {
   const h = harness({ begin_glimmer_upload: { data: { id: 'g1', asset }, error: null },
     finalize_glimmer_upload: { data: { id: 'g1', status: 'ready' }, error: null } });
   const result = await h.repository.uploadGlimmer({ spaceId: 's', date: '2026-07-12', note: '<script>', mood: 'loved',
-    file: { type: 'image/jpeg', size: 10 } });
+    preferredTimezone: 'America/Los_Angeles', file: { type: 'image/jpeg', size: 10 } });
   assert.equal(result.status, 'ready');
   assert.deepEqual(h.calls.map(([name]) => name), ['begin_glimmer_upload', 'finalize_glimmer_upload']);
   assert.equal(h.calls[0][1].p_mood, 'loved');
+  assert.equal(h.calls[0][1].p_preferred_timezone, 'America/Los_Angeles');
   assert.equal(h.storageCalls[0][0], 'upload');
 });
 
@@ -52,6 +53,30 @@ test('gift state is read and collected through role-bound RPCs', async () => {
     ['get_gift_icons_found', { p_space_id: 'space-1' }],
     ['collect_gift_icon', { p_space_id: 'space-1', p_gift_id: 'ticket' }]
   ]);
+});
+
+test('invalid glimmer timezone fails before RPC', async () => {
+  const h = harness();
+  await assert.rejects(h.repository.uploadGlimmer({ preferredTimezone: 'UTC', file: { type: 'image/png', size: 1 } }),
+    (error) => error.code === 'INVALID_TIMEZONE');
+  assert.equal(h.calls.length, 0);
+});
+
+test('magic-link URL tokens are consumed through Supabase auth', async () => {
+  const calls = [];
+  const repository = new GlimmerRepository({
+    supabase: { auth: { setSession: async (tokens) => {
+      calls.push(tokens);
+      return { data: { session: { user: { id: 'ray' } } }, error: null };
+    } } },
+    storageFactory: {},
+  });
+  const session = await repository.consumeSessionFromUrl(
+    'http://127.0.0.1:8787/index.html#access_token=access&refresh_token=refresh&type=magiclink'
+  );
+  assert.equal(session.user.id, 'ray');
+  assert.deepEqual(calls, [{ access_token: 'access', refresh_token: 'refresh' }]);
+  assert.equal(await repository.consumeSessionFromUrl('http://127.0.0.1:8787/index.html'), null);
 });
 
 test('invalid gift id fails before RPC', async () => {
@@ -109,9 +134,9 @@ test('password recovery updates the authenticated recovery user', async () => {
   assert.deepEqual(calls, [{ password: 'new secure password' }]);
 });
 
-test('dashboard context is read through the repository RPC', async () => {
+test('dashboard context is read through the repository RPC with the login timezone', async () => {
   const expected = { role: 'ray', local_today: '2026-07-12', reward_balance: 1 };
   const h = harness({ get_glimmer_dashboard: { data: expected, error: null } });
-  assert.deepEqual(await h.repository.getDashboard('space-1'), expected);
-  assert.deepEqual(h.calls, [['get_glimmer_dashboard', { p_space_id: 'space-1' }]]);
+  assert.deepEqual(await h.repository.getDashboard('space-1', 'America/Los_Angeles'), expected);
+  assert.deepEqual(h.calls, [['get_glimmer_dashboard', { p_space_id: 'space-1', p_timezone: 'America/Los_Angeles' }]]);
 });

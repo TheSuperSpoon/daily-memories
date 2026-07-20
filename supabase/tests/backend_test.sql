@@ -1,18 +1,23 @@
 begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = extensions, public, pg_catalog;
-select extensions.plan(42);
+select extensions.plan(48);
 
 select extensions.has_table('public','spaces','spaces exists');
 select extensions.has_table('public','glimmers','glimmers exists');
 select extensions.has_table('public','reward_ledger','reward ledger exists');
 select extensions.has_column('public','glimmers','mood','glimmers mood exists');
+select extensions.has_column('public','glimmers','preferred_timezone','glimmers preferred timezone exists');
 select extensions.has_table('public','gift_progress','role-bound gift progress exists');
 select extensions.has_column('public','gift_progress','gift_icons_found','gift state exists');
 select extensions.ok(exists(
   select 1 from pg_constraint
   where conname='glimmers_mood_check' and conrelid='public.glimmers'::regclass
 ),'glimmers mood check exists');
+select extensions.ok(exists(
+  select 1 from pg_constraint
+  where conname='glimmers_preferred_timezone_check' and conrelid='public.glimmers'::regclass
+),'glimmers preferred timezone check exists');
 select extensions.is((select count(*)::integer from public.registration_slots),2,'two registration slots seeded');
 select extensions.is((select count(*)::integer from public.spaces),1,'one shared space seeded');
 
@@ -72,21 +77,28 @@ $$,'P0001','REGISTRATION_LIMIT_REACHED','third registration is rejected');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
 select extensions.lives_ok($$select public.begin_glimmer_upload('00000000-0000-0000-0000-000000000001',
- (now() at time zone 'Asia/Shanghai')::date,'image/jpeg',100,'safe <script> text','loved')$$,'valid upload with mood can begin');
+ (now() at time zone 'Asia/Shanghai')::date,'image/jpeg',100,'safe <script> text','loved','America/Los_Angeles')$$,'valid upload with mood can begin');
 reset role;
 select extensions.is((select mood from public.glimmers where note='safe <script> text'),
  'loved','valid mood is persisted');
+select extensions.is((select preferred_timezone from public.glimmers where note='safe <script> text'),
+ 'America/Los_Angeles','valid preferred timezone is persisted');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
 select extensions.throws_ok($$select public.begin_glimmer_upload('00000000-0000-0000-0000-000000000001',
  (now() at time zone 'Asia/Shanghai')::date,'image/jpeg',100,'','angry')$$,
  '22023','INVALID_MOOD','bad mood rejected by upload RPC');
+select extensions.throws_ok($$select public.begin_glimmer_upload('00000000-0000-0000-0000-000000000001',
+ (now() at time zone 'Asia/Shanghai')::date,'image/jpeg',100,'','happy','Europe/London')$$,
+ '22023','INVALID_TIMEZONE','unknown preferred timezone is rejected');
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000002',true);
 select extensions.lives_ok($$select public.begin_glimmer_upload('00000000-0000-0000-0000-000000000001',
  (now() at time zone 'Asia/Shanghai')::date,'image/png',100,'legacy client')$$,'five argument upload remains compatible');
 reset role;
 select extensions.is(coalesce((select coalesce(mood,'__NULL__') from public.glimmers where note='legacy client'),'__MISSING__'),
  '__NULL__','legacy upload stores a null mood');
+select extensions.is((select preferred_timezone from public.glimmers where note='legacy client'),
+ 'Asia/Shanghai','legacy upload defaults to Beijing');
 set local role authenticated;
 select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001',true);
 select extensions.throws_ok($$select public.begin_glimmer_upload('00000000-0000-0000-0000-000000000001',
@@ -102,9 +114,9 @@ select extensions.throws_ok($$
   values('00000000-0000-0000-0000-000000000001','10000000-0000-0000-0000-000000000001',
    'ray',current_date-40,'angry')
 $$,'23514',null,'mood check rejects direct invalid writes');
-insert into public.glimmers(id,space_id,owner_id,role,glimmer_date,status,mood,created_at,ready_at)
+insert into public.glimmers(id,space_id,owner_id,role,glimmer_date,status,mood,preferred_timezone,created_at,ready_at)
 values('20000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000001',
- '10000000-0000-0000-0000-000000000001','ray',current_date-40,'ready','sad',
+ '10000000-0000-0000-0000-000000000001','ray',current_date-40,'ready','sad','America/Los_Angeles',
  (current_date-40)::timestamp at time zone 'Asia/Shanghai',now());
 insert into public.glimmer_assets(glimmer_id,bucket,object_key,content_type,size_bytes)
 values('20000000-0000-0000-0000-000000000003','glimmers','mood/list.png','image/png',1);
@@ -114,8 +126,11 @@ select set_config('request.jwt.claim.sub','10000000-0000-0000-0000-000000000001'
 select extensions.is((select glimmer->>'mood' from public.list_glimmers(
  '00000000-0000-0000-0000-000000000001',current_date-40,current_date-40)),
  'sad','list glimmers returns mood');
+select extensions.is((select glimmer->>'preferred_timezone' from public.list_glimmers(
+ '00000000-0000-0000-0000-000000000001',current_date-40,current_date-40)),
+ 'America/Los_Angeles','list glimmers returns preferred timezone');
 select extensions.is(has_function_privilege('anon',
- 'public.begin_glimmer_upload(uuid,date,text,bigint,text,text)','EXECUTE'),false,
+ 'public.begin_glimmer_upload(uuid,date,text,bigint,text,text,text)','EXECUTE'),false,
  'anonymous users cannot execute mood upload RPC');
 select extensions.throws_ok($$insert into public.reward_ledger(space_id,event_type,amount,streak_run_start,streak_milestone,idempotency_key)
  values('00000000-0000-0000-0000-000000000001','streak_earned',1,current_date,10,'forbidden')$$,
