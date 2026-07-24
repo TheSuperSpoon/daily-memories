@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { clearLegacyMelPreludeState, MEL_PRELUDE_RESET_KEY } from '../js/prelude-storage.js';
+import {
+  clearLegacyMelPreludeState,
+  melPreludeStorageKey,
+  MEL_PRELUDE_RESET_KEY,
+  migrateMelPreludeCompletion,
+} from '../js/prelude-storage.js';
 
 function storage(initial) {
   const values = new Map(Object.entries(initial));
@@ -26,4 +31,16 @@ test('launch reset removes old Mel prelude completion without touching timezone 
   assert.equal(state.getItem('memory-preferred-timezone'), 'Asia/Shanghai');
   assert.equal(state.getItem(MEL_PRELUDE_RESET_KEY), 'yes');
   assert.equal(clearLegacyMelPreludeState(state), false);
+});
+
+test('Mel prelude completion migrates from account id to the stable space role', () => {
+  const state = storage({ 'melPreludeComplete:deleted-user': 'yes' });
+  assert.equal(migrateMelPreludeCompletion(state, {
+    spaceId: 'space-1', role: 'mel', userId: 'deleted-user'
+  }), true);
+  assert.equal(state.getItem(melPreludeStorageKey('space-1', 'mel')), 'yes');
+  assert.equal(state.getItem('melPreludeComplete:deleted-user'), null);
+  assert.equal(migrateMelPreludeCompletion(state, {
+    spaceId: 'space-1', role: 'mel', userId: 'new-user'
+  }), false);
 });

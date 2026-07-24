@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  beijingMonthKey, isOwnerDeletable, monthRange, parseMemoryTags,
+  beijingMonthKey, isRoleDeletable, monthRange, parseMemoryTags,
   timePresentation, validateMemoryFile
 } from '../js/memory-model.js';
 
@@ -37,10 +37,9 @@ test('memory file validation applies separate image and audio limits', () => {
     (error) => error.code === 'INVALID_CONTENT_TYPE');
 });
 
-test('delete visibility requires ownership and a 24 hour window', () => {
+test('delete visibility follows the role across account replacement and a 24 hour window', () => {
   const now = Date.parse('2026-07-20T12:00:00Z');
-  assert.equal(isOwnerDeletable({ owner_id: 'u1', created_at: '2026-07-19T12:00:01Z' }, 'u1', now), true);
-  assert.equal(isOwnerDeletable({ owner_id: 'u1', created_at: '2026-07-19T12:00:00Z' }, 'u1', now), false);
-  assert.equal(isOwnerDeletable({ owner_id: 'u2', created_at: '2026-07-20T11:00:00Z' }, 'u1', now), false);
+  assert.equal(isRoleDeletable({ owner_id: 'deleted-user', role: 'mel', created_at: '2026-07-19T12:00:01Z' }, 'mel', now), true);
+  assert.equal(isRoleDeletable({ owner_id: 'deleted-user', role: 'mel', created_at: '2026-07-19T12:00:00Z' }, 'mel', now), false);
+  assert.equal(isRoleDeletable({ owner_id: 'new-user', role: 'ray', created_at: '2026-07-20T11:00:00Z' }, 'mel', now), false);
 });
-

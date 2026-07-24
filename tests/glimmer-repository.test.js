@@ -59,6 +59,26 @@ test('gift state is read and collected through role-bound RPCs', async () => {
   ]);
 });
 
+test('Mel prelude completion is read and written through role-bound RPCs', async () => {
+  const h = harness({
+    get_mel_prelude_completed: { data: true, error: null },
+    complete_mel_prelude: { data: true, error: null },
+  });
+  assert.equal(await h.repository.getMelPreludeCompleted('space-1'), true);
+  assert.equal(await h.repository.completeMelPrelude('space-1'), true);
+  assert.deepEqual(h.calls, [
+    ['get_mel_prelude_completed', { p_space_id: 'space-1' }],
+    ['complete_mel_prelude', { p_space_id: 'space-1' }],
+  ]);
+});
+
+test('glimmer list filters by stable role instead of account id', async () => {
+  const h = harness({ list_glimmers_by_role: { data: [], error: null } });
+  await h.repository.listGlimmers({ spaceId: 'space-1', from: '2026-07-01', to: '2026-07-31', role: 'mel' });
+  assert.equal(h.calls[0][1].p_role, 'mel');
+  assert.equal('p_owner_id' in h.calls[0][1], false);
+});
+
 test('gift audio after the first find uses RPC metadata and a one-hour signed URL', async () => {
   const asset = { provider: 'supabase', bucket: 'gifts', object_key: 'private/audio.mp3' };
   const h = harness({ get_gift_audio: { data: { title: 'In Loving Memory', asset }, error: null } });

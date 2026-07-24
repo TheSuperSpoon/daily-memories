@@ -1,8 +1,8 @@
-import { appConfig, memoryRepository } from './app-services.js?v=20260720-glimmer-timezones';
+import { appConfig, memoryRepository } from './app-services.js?v=20260724-role-continuity';
 import {
-  beijingMonthKey, isOwnerDeletable, monthFromKey, monthKey, monthRange,
+  beijingMonthKey, isRoleDeletable, monthFromKey, monthKey, monthRange,
   parseMemoryTags, timePresentation, validateMemoryFile
-} from './memory-model.js?v=20260720-glimmer-timezones';
+} from './memory-model.js?v=20260724-role-continuity';
 
 const $ = (selector) => document.querySelector(selector);
 const elements = {
@@ -137,7 +137,7 @@ function makeAudioPlayer(record) {
 }
 
 function makeDeleteButton(record, type) {
-  if (!isOwnerDeletable(record, identity?.user_id)) return null;
+  if (!isRoleDeletable(record, identity?.role)) return null;
   const button = document.createElement('button'); button.type = 'button';
   button.className = type === 'memory' ? 'memory-delete-button' : 'mel-like-delete-button';
   button.textContent = 'Delete';

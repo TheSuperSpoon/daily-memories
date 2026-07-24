@@ -64,8 +64,8 @@ export function timePresentation(value, timeZone) {
   };
 }
 
-export function isOwnerDeletable(record, userId, nowMs = Date.now()) {
-  return Boolean(record?.owner_id === userId
+export function isRoleDeletable(record, role, nowMs = Date.now()) {
+  return Boolean(record?.role === role
     && new Date(record.created_at).getTime() > nowMs - 86400000);
 }
 
@@ -80,4 +80,3 @@ export function validateMemoryFile(file) {
   }
   return IMAGE_TYPES.includes(file.type) ? 'image' : 'audio';
 }
-

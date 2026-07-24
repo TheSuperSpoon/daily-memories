@@ -1,9 +1,9 @@
 import { createClient } from "./vendor/supabase.js";
 import { createConfiguredSupabaseClient } from "./supabase-client.js";
-import { GlimmerRepository } from "./glimmer-repository.js?v=20260721-gift-audio";
+import { GlimmerRepository } from "./glimmer-repository.js?v=20260724-role-continuity";
 import { StorageAdapterFactory } from "./storage/storage-adapter-factory.js";
 import { SupabaseStorageAdapter } from "./storage/supabase-storage-adapter.js";
-import { MemoryRepository } from "./memory-repository.js?v=20260720-glimmer-timezones";
+import { MemoryRepository } from "./memory-repository.js?v=20260724-role-continuity";
 
 export const appConfig = window.__APP_CONFIG__;
 export const supabase = createConfiguredSupabaseClient(createClient, appConfig);

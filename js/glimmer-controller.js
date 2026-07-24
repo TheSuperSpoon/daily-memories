@@ -1,9 +1,9 @@
-import { appConfig, repository } from "./app-services.js?v=20260720-glimmer-timezones";
+import { appConfig, repository } from "./app-services.js?v=20260724-role-continuity";
 import { canDeleteAt, indexMonth, LatestRequest, moodDraftValue, monthKey, monthRange } from "./glimmer-model.js";
 import { canAccessMelFeature, canOpenStats } from "./feature-access.js";
 import { calculateRelationshipStats } from "./glimmer-stats.js";
 import { BASE_CAPTION_STOP_WORDS } from "./text-tokenizer.js";
-import { timePresentation } from "./memory-model.js?v=20260720-glimmer-timezones";
+import { timePresentation } from "./memory-model.js?v=20260724-role-continuity";
 
 export { monthKey, monthRange } from "./glimmer-model.js";
 

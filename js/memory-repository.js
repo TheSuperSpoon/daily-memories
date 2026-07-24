@@ -1,4 +1,4 @@
-import { IMAGE_TYPES, parseMemoryTags, validateMemoryFile } from './memory-model.js?v=20260720-glimmer-timezones';
+import { IMAGE_TYPES, parseMemoryTags, validateMemoryFile } from './memory-model.js?v=20260724-role-continuity';
 
 export class MemoryRepository {
   constructor({ supabase, storageFactory }) {

@@ -1,11 +1,11 @@
-import { appConfig, repository } from "./js/app-services.js?v=20260721-gift-audio";
+import { appConfig, repository } from "./js/app-services.js?v=20260724-role-continuity";
 import {
   activateGalleryPage,
   activateGlimmerPage,
   getGlimmerIdentity,
   initializeGlimmerSession,
   resetGlimmerSession,
-} from "./js/glimmer-controller.js?v=20260720-login-timezone";
+} from "./js/glimmer-controller.js?v=20260724-role-continuity";
 import {
   canAccessGiftPage,
   canAccessMelFeature,
@@ -19,9 +19,13 @@ import {
   loadGiftStateForIdentity,
 } from "./js/gift-access-service.js?v=20260721-gift-audio";
 import { clearGiftAudioCache, resolveGiftAudioSource } from "./js/gift-audio-cache.js?v=20260721-gift-audio";
-import { clearLegacyMelPreludeState } from "./js/prelude-storage.js?v=20260721-launch-reset";
-import { activateMemoriesPage, resetMemorySession } from "./js/memory-controller.js?v=20260720-login-timezone";
-import { timePresentation } from "./js/memory-model.js?v=20260720-login-timezone";
+import {
+  clearLegacyMelPreludeState,
+  melPreludeStorageKey,
+  migrateMelPreludeCompletion,
+} from "./js/prelude-storage.js?v=20260724-role-continuity";
+import { activateMemoriesPage, resetMemorySession } from "./js/memory-controller.js?v=20260724-role-continuity";
+import { timePresentation } from "./js/memory-model.js?v=20260724-role-continuity";
 
 const CONFIG = {
   birthday: "2026-07-20T00:00:00",
@@ -95,6 +99,7 @@ clearLegacyMelPreludeState();
 if (ticketOverlay) document.body.append(ticketOverlay);
 
 let litLightCount = 0;
+let melPreludeCompleted = false;
 let preludeCompleteTimer;
 let homecomingInterval;
 let authMode = "login";
@@ -138,13 +143,11 @@ function updateLoginTimezoneButtons() {
 }
 
 function preludeStorageKey() {
-  return authenticatedSession?.user?.id
-    ? `melPreludeComplete:${authenticatedSession.user.id}`
-    : "melPreludeComplete";
+  return melPreludeStorageKey(appConfig.spaceId, currentIdentity?.role ?? "mel");
 }
 
 function hasCompletedPrelude() {
-  return canAccessMelFeature(currentIdentity) && localStorage.getItem(preludeStorageKey()) === "yes";
+  return canAccessMelFeature(currentIdentity) && melPreludeCompleted;
 }
 
 function syncCompletedControls() {
@@ -204,12 +207,21 @@ async function loadGiftState() {
   resetGiftState();
   if (!sessionUserId || !canAccessMelFeature(currentIdentity)) return;
   try {
-    const nextGiftState = await loadGiftStateForIdentity({
-      identity: currentIdentity,
-      spaceId: appConfig.spaceId,
-      repository,
-    });
+    const [nextGiftState, backendPreludeCompleted] = await Promise.all([
+      loadGiftStateForIdentity({
+        identity: currentIdentity,
+        spaceId: appConfig.spaceId,
+        repository,
+      }),
+      repository.getMelPreludeCompleted(appConfig.spaceId),
+    ]);
     if (authenticatedSession?.user?.id !== sessionUserId) return;
+    const localPreludeCompleted = localStorage.getItem(preludeStorageKey()) === "yes";
+    melPreludeCompleted = backendPreludeCompleted || localPreludeCompleted;
+    if (!backendPreludeCompleted && localPreludeCompleted) {
+      await repository.completeMelPrelude(appConfig.spaceId);
+      if (authenticatedSession?.user?.id !== sessionUserId) return;
+    }
     giftIconsFound = normalizeGiftState(nextGiftState);
     giftStateReady = true;
     applyGiftState();
@@ -394,6 +406,11 @@ async function unlock() {
   await initializeGlimmerSession();
   currentIdentity = getGlimmerIdentity();
   if (!currentIdentity) throw new Error("Could not load your member role.");
+  migrateMelPreludeCompletion(localStorage, {
+    spaceId: appConfig.spaceId,
+    role: currentIdentity.role,
+    userId: authenticatedSession?.user?.id,
+  });
   gate.classList.add("hidden");
   syncCompletedControls();
   applyGiftState();
@@ -457,7 +474,11 @@ function resetPrelude() {
 
 function completePrelude() {
   if (!canAccessMelFeature(currentIdentity)) return;
+  melPreludeCompleted = true;
   localStorage.setItem(preludeStorageKey(), "yes");
+  void repository.completeMelPrelude(appConfig.spaceId).catch((error) => {
+    console.error("Mel prelude completion is waiting to sync", error);
+  });
   syncCompletedControls();
   lovePrelude.classList.add("is-complete");
 
@@ -517,6 +538,7 @@ function setAuthBusy(busy, message = "") {
 function showSignedOut(message = "") {
   authenticatedSession = null;
   currentIdentity = null;
+  melPreludeCompleted = false;
   resetGlimmerSession();
   resetMemorySession();
   resetGiftState();

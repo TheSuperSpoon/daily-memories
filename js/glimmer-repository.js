@@ -88,9 +88,9 @@ export class GlimmerRepository {
     return data;
   }
 
-  async listGlimmers({ spaceId, from, to, ownerId = null, limit = 50, cursor = null }) {
-    const { data, error } = await this.supabase.rpc('list_glimmers', {
-      p_space_id: spaceId, p_from: from, p_to: to, p_owner_id: ownerId, p_limit: limit,
+  async listGlimmers({ spaceId, from, to, role = null, limit = 50, cursor = null }) {
+    const { data, error } = await this.supabase.rpc('list_glimmers_by_role', {
+      p_space_id: spaceId, p_from: from, p_to: to, p_role: role, p_limit: limit,
       p_cursor_date: cursor?.date ?? null, p_cursor_created_at: cursor?.createdAt ?? null,
       p_cursor_id: cursor?.id ?? null
     });
@@ -126,6 +126,18 @@ export class GlimmerRepository {
     const { data, error } = await this.supabase.rpc('collect_gift_icon', { p_space_id: spaceId, p_gift_id: giftId });
     if (error) throw this.#error(error);
     return data ?? {};
+  }
+
+  async getMelPreludeCompleted(spaceId) {
+    const { data, error } = await this.supabase.rpc('get_mel_prelude_completed', { p_space_id: spaceId });
+    if (error) throw this.#error(error);
+    return data === true;
+  }
+
+  async completeMelPrelude(spaceId) {
+    const { data, error } = await this.supabase.rpc('complete_mel_prelude', { p_space_id: spaceId });
+    if (error) throw this.#error(error);
+    return data === true;
   }
 
   async getGiftAudio(spaceId) {

@@ -33,10 +33,10 @@ test("stale requests cannot be treated as current", () => {
   assert.equal(requests.isCurrent(second), false);
 });
 
-test("delete visibility requires ownership and an open server-time window", () => {
+test("delete visibility follows the role across account replacement and an open server-time window", () => {
   const serverNow = Date.parse("2026-07-21T00:00:00Z");
-  const dashboard = { user_id: "owner" };
-  assert.equal(canDeleteAt({ owner_id: "owner", created_at: "2026-07-20T00:00:01Z" }, dashboard, serverNow), true);
-  assert.equal(canDeleteAt({ owner_id: "other", created_at: "2026-07-20T23:00:00Z" }, dashboard, serverNow), false);
-  assert.equal(canDeleteAt({ owner_id: "owner", created_at: "2026-07-20T00:00:00Z" }, dashboard, serverNow), false);
+  const dashboard = { user_id: "new-account", role: "mel" };
+  assert.equal(canDeleteAt({ owner_id: "deleted-account", role: "mel", created_at: "2026-07-20T00:00:01Z" }, dashboard, serverNow), true);
+  assert.equal(canDeleteAt({ owner_id: "new-account", role: "ray", created_at: "2026-07-20T23:00:00Z" }, dashboard, serverNow), false);
+  assert.equal(canDeleteAt({ owner_id: "deleted-account", role: "mel", created_at: "2026-07-20T00:00:00Z" }, dashboard, serverNow), false);
 });

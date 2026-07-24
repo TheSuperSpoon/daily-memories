@@ -1,4 +1,4 @@
-import { repository } from "./app-services.js?v=20260720-glimmer-timezones";
+import { repository } from "./app-services.js?v=20260724-role-continuity";
 
 const form = document.querySelector("#recoveryForm");
 const password = document.querySelector("#newPassword");
